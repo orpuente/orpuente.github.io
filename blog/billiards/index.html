@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Oscar Puente</title>
+    <link rel="stylesheet" href="http://127.0.0.1:1111/page.css">
+</head>
+
+<body>
+    <header class="header">
+        <nav>
+            <div class="links">
+                
+                <!-- override the active navbar tab here -->
+                 
+                <a class="" href="/">About</a>
+                <a class="" href="/blog/">Blog</a>
+                <a class="" href="/research/">Research</a>
+                <a class="" href="/cv/">Resumé</a>
+            </div>
+            <div class="contact">
+                <a target="_blank" href="https://www.twitter.com/username">
+                    <img class="icon" src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/twitter.svg"
+                        alt="Twitter">
+                </a>
+                <a target="_blank" href="https://www.github.com/orpuente">
+                    <img class="icon" src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/github.svg"
+                        alt="GitHub">
+                </a>
+                <!-- <a target="_blank" href="https://keybase.io/orpuente">
+            <img class="icon" src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/keybase.svg" alt="Keybase">
+        </a> -->
+                <a target="_blank" href="https://www.linkedin.com/in/username">
+                    <img class="icon" src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/linkedin.svg"
+                        alt="LinkedIn">
+                </a>
+                <a href="mailto:mail@domain.com">
+                    <img class="icon" src="/gmail.svg" alt="Email">
+                </a>
+            </div>
+        </nav>
+         
+    </header>
+    
+<article class="blog-post">
+  <header>
+    <h3 itemprop="name headline">Billiards
+      <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Oscar Puente</span>
+      </span>
+      <span class="reading-time">
+        
+        (4 min. read)
+      </span>
+    </h3>
+    <span class="shared">
+      Posted on <span itemprop="datePublished">2019-11-04</span>
+    </span>
+  </header>
+  <div itemprop="articleBody" class="hyphenate">
+    <p>I've been learning <a href="https://processing.org/">Processing</a> during the last few months. During my learning process, I have been writting a bouncing box simulation as a code kata. If you don't know what code katas are, check out <a href="http://codekata.com/">this blog post</a> by Dave Thomas. After writting the program many times I have been able to condense the program's logic down to four statements/lines of code.</p>
+<span id="continue-reading"></span>
+<pre data-lang="java" style="background-color:#f9f9f9;color:#111111;" class="language-java "><code class="language-java" data-lang="java"><span style="color:#8e908c;">// initialize the program state
+</span><span style="color:#c99e00;">PVector</span><span> s </span><span style="color:#3e999f;">= </span><span style="color:#8959a8;">new </span><span style="color:#c99e00;">PVector</span><span>(width</span><span style="color:#3e999f;">/</span><span style="color:#f07219;">2</span><span>, height</span><span style="color:#3e999f;">/</span><span style="color:#f07219;">2</span><span>),
+</span><span>    v </span><span style="color:#3e999f;">= </span><span style="color:#8959a8;">new </span><span style="color:#c99e00;">PVector</span><span>(</span><span style="color:#f07219;">0.5</span><span>, </span><span style="color:#f07219;">0.3</span><span>),
+</span><span>    d </span><span style="color:#3e999f;">= </span><span style="color:#8959a8;">new </span><span style="color:#c99e00;">PVector</span><span>(</span><span style="color:#f07219;">20</span><span>, </span><span style="color:#f07219;">15</span><span>);
+</span><span>
+</span><span>void </span><span style="color:#c82728;">draw</span><span style="color:#4271ae;">() </span><span>{
+</span><span>  </span><span style="color:#8e908c;">// draw call
+</span><span>  </span><span style="color:#c82728;">rect</span><span style="color:#4271ae;">(s.x, s.y, d.x, d.y)</span><span>;
+</span><span>
+</span><span>  </span><span style="color:#8e908c;">// update the box position
+</span><span>  s.</span><span style="color:#c82728;">add</span><span style="color:#4271ae;">(v)</span><span>;
+</span><span>
+</span><span>  </span><span style="color:#8e908c;">// update the box velocity when a collision occurs
+</span><span>  v.x </span><span style="color:#3e999f;">= </span><span>(s.x </span><span style="color:#3e999f;">&lt;= </span><span style="color:#f07219;">0 </span><span style="color:#3e999f;">||</span><span> width </span><span style="color:#3e999f;">&lt;=</span><span> s.x</span><span style="color:#3e999f;">+</span><span>d.x) </span><span style="color:#3e999f;">? </span><span>(s.x</span><span style="color:#3e999f;">-=</span><span>v.x)</span><span style="color:#3e999f;">-</span><span>s.x</span><span style="color:#3e999f;">-</span><span>v.x </span><span style="color:#3e999f;">:</span><span> v.x;
+</span><span>  v.y </span><span style="color:#3e999f;">= </span><span>(s.y </span><span style="color:#3e999f;">&lt;= </span><span style="color:#f07219;">0 </span><span style="color:#3e999f;">||</span><span> height </span><span style="color:#3e999f;">&lt;=</span><span> s.y</span><span style="color:#3e999f;">+</span><span>d.y) </span><span style="color:#3e999f;">? </span><span>(s.y</span><span style="color:#3e999f;">-=</span><span>v.y)</span><span style="color:#3e999f;">-</span><span>s.y</span><span style="color:#3e999f;">-</span><span>v.y </span><span style="color:#3e999f;">:</span><span> v.y;
+</span><span>}
+</span></code></pre>
+<p>However, last night I was able to get the program's logic down to a single statement! I came across this neat optimization while studying <a href="https://en.wikipedia.org/wiki/Dynamical_billiards">billiards</a> in my <a href="https://ocw.mit.edu/courses/18-900-geometry-and-topology-in-the-plane-spring-2023/">Intro to Topology</a> class. Before delving in how it works, let's see the code.</p>
+<span id="continue-reading"></span>
+<pre data-lang="java" style="background-color:#f9f9f9;color:#111111;" class="language-java "><code class="language-java" data-lang="java"><span style="color:#8e908c;">// initialize the program&#39;s state
+</span><span style="color:#8959a8;">float</span><span> x</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">100</span><span>, y</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">100</span><span>, w</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">50</span><span>, h</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">40</span><span>, vx</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">0.5</span><span>, vy</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">0.3</span><span>;
+</span><span>
+</span><span>void </span><span style="color:#c82728;">draw</span><span style="color:#4271ae;">() </span><span>{
+</span><span>  </span><span style="color:#8e908c;">// this statement handles the draw call, updates the box position
+</span><span>  </span><span style="color:#8e908c;">// and &quot;detects&quot; collisions all the same time
+</span><span>  </span><span style="color:#c82728;">rect</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    </span><span style="color:#c82728;">abs</span><span style="color:#4271ae;">((x</span><span style="color:#3e999f;">+=</span><span style="color:#4271ae;">vx) </span><span style="color:#3e999f;">% </span><span style="color:#4271ae;">(</span><span style="color:#f07219;">2</span><span style="color:#3e999f;">*</span><span style="color:#4271ae;">(width</span><span style="color:#3e999f;">-</span><span style="color:#4271ae;">w)) </span><span style="color:#3e999f;">- </span><span style="color:#4271ae;">(width</span><span style="color:#3e999f;">-</span><span style="color:#4271ae;">w) </span><span style="color:#3e999f;">+ </span><span style="color:#f07219;">1</span><span style="color:#4271ae;">),
+</span><span style="color:#4271ae;">    </span><span style="color:#c82728;">abs</span><span style="color:#4271ae;">((y</span><span style="color:#3e999f;">+=</span><span style="color:#4271ae;">vy) </span><span style="color:#3e999f;">% </span><span style="color:#4271ae;">(</span><span style="color:#f07219;">2</span><span style="color:#3e999f;">*</span><span style="color:#4271ae;">(height</span><span style="color:#3e999f;">-</span><span style="color:#4271ae;">h)) </span><span style="color:#3e999f;">- </span><span style="color:#4271ae;">(height</span><span style="color:#3e999f;">-</span><span style="color:#4271ae;">h) </span><span style="color:#3e999f;">+ </span><span style="color:#f07219;">1</span><span style="color:#4271ae;">),
+</span><span style="color:#4271ae;">    w, h
+</span><span style="color:#4271ae;">  )</span><span>;
+</span><span>}
+</span></code></pre>
+<p>You can see the program's output below,</p>
+<iframe class="canvas" title="unfolded" src="/pkg_billiards/final_app/index.html" style="width:400px; height:300px;"></iframe>
+<p><strong>Figure 1</strong> : Bouncing box</p>
+<p>The idea behind this optimization is that the bouncing trajectory can be <em>unfolded</em> into a straight line. In this way we don't need to detect collisions, instead we just compute the <em>folded</em> position of the box using modular arithmetic. To understand this better, we can simplify the problem to have a bouncing ball instead of a bouncing box.</p>
+<iframe class="canvas" title="unfolded" src="/pkg_billiards/unfolded/index.html" style="width:640px; height:360px;"></iframe>
+<p><strong>Figure 2</strong> : Folded vs unfolded trajectory</p>
+<p>Consider the trajectory generated by a ball bouncing in the unit square. It is a natural idea to reflect the square over the edge where the ball bounces off. Now instead of bouncing off that side, it will be as if the ball continued in a straight line. Note that we can keep reflecting the square in such a way that the entire plane is tiled. In this way we can completely <em>unfold</em> the ball's trajectory into a straight line.</p>
+<p>In the unfolded domain, we don't need to account for collision detection, since ball moves in a straight line. Now, we can update the ball state as follows,</p>
+<pre data-lang="java" style="background-color:#f9f9f9;color:#111111;" class="language-java "><code class="language-java" data-lang="java"><span>x </span><span style="color:#3e999f;">+=</span><span> vx;
+</span><span>y </span><span style="color:#3e999f;">+=</span><span> vy;
+</span></code></pre>
+<p>Then, we can compute the ball position in <em>folded</em> domain using modular arithmetic,</p>
+<pre data-lang="java" style="background-color:#f9f9f9;color:#111111;" class="language-java "><code class="language-java" data-lang="java"><span style="color:#8959a8;">float</span><span> x_folded </span><span style="color:#3e999f;">=</span><span> x </span><span style="color:#3e999f;">% </span><span>(</span><span style="color:#f07219;">2 </span><span style="color:#3e999f;">*</span><span> square_side) </span><span style="color:#3e999f;">-</span><span> square_side;
+</span><span style="color:#8959a8;">float</span><span> y_folded </span><span style="color:#3e999f;">=</span><span> y </span><span style="color:#3e999f;">% </span><span>(</span><span style="color:#f07219;">2 </span><span style="color:#3e999f;">*</span><span> square_side) </span><span style="color:#3e999f;">-</span><span> square_side;
+</span></code></pre>
+<p>Note that we can accomplish the last two steps, updating the ball state and computing the folded position, in a single statement,</p>
+<pre data-lang="java" style="background-color:#f9f9f9;color:#111111;" class="language-java "><code class="language-java" data-lang="java"><span style="color:#8959a8;">float</span><span> x_folded </span><span style="color:#3e999f;">= </span><span>(x </span><span style="color:#3e999f;">+=</span><span> vx) </span><span style="color:#3e999f;">% </span><span>(</span><span style="color:#f07219;">2 </span><span style="color:#3e999f;">*</span><span> square_side) </span><span style="color:#3e999f;">-</span><span> square_side;
+</span><span style="color:#8959a8;">float</span><span> y_folded </span><span style="color:#3e999f;">= </span><span>(y </span><span style="color:#3e999f;">+=</span><span> vy) </span><span style="color:#3e999f;">% </span><span>(</span><span style="color:#f07219;">2 </span><span style="color:#3e999f;">*</span><span> square_side) </span><span style="color:#3e999f;">-</span><span> square_side;
+</span></code></pre>
+<p>This should look familiar to the code I showed earlier in this post. The only difference is that when considering a bouncing box instead of a ball, we have to account for the box dimensions when computing the folded position.</p>
+<p><strong>Edit</strong>: If you are interested in learning more about this topic, I recently wrote <a href="/todo/">a paper on billiards</a>.</p>
+
+  </div>
+</article>
+
+
+    <footer class="footer">
+        <p>Icons by <a href="https://simpleicons.org/">Simple Icons</a></p>
+    </footer>
+</body>
+
+</html>
