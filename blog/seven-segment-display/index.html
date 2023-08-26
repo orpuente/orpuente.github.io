@@ -18,7 +18,7 @@
                 <a class="" href="/">About</a>
                 <a class="" href="/blog/">Blog</a>
                 <a class="" href="/research/">Research</a>
-                <a class="" href="/cv/">Resumé</a>
+                <a class="" href="/cv/">Resume</a>
             </div>
             <div class="contact">
                 <a target="_blank" href="https://www.twitter.com/username">
@@ -46,13 +46,13 @@
     
 <article class="blog-post">
   <header>
-    <h3 itemprop="name headline">Seven-segment display
+    <h3 itemprop="name headline">Encoding the state of a seven-segment display in one byte
       <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
         <span itemprop="name">Oscar Puente</span>
       </span>
       <span class="reading-time">
         
-        (1 min. read)
+        (3 min. read)
       </span>
     </h3>
     <span class="shared">
@@ -60,9 +60,71 @@
     </span>
   </header>
   <div itemprop="articleBody" class="hyphenate">
-    <p>🚧 Under construction: I am currently transcribing this entry from my archives. It will be available soon.</p>
+    <p>Last week I came across <a href="https://youtu.be/zp4BMR88260?si=FHM_Xm1R79BhVMdl">Tom Scott's video</a> on seven-segment displays. A seven-segment display is an electronic device that displays decimal numerals. It consists of seven LEDs arranged in a rectangular shape. Each LED is called a segment. When a segment is illuminated, it forms part of a numerical digit. You may have seen them in some electronic devices, including: digital clocks, electronic meters, basic calculators.</p>
 <span id="continue-reading"></span>
-<p>As we transition from the introductory phase, we encounter a similar placeholder in the content section. This paragraph, like a blank canvas awaiting strokes of inspiration, anticipates the forthcoming substance that will fill this space. Its purpose is to validate the formatting and arrangement of the content area, guaranteeing that the visual and structural aspects continue to seamlessly integrate. Just as a symphony begins with a few preliminary notes, this paragraph signifies the prelude to the substantive discussions and insights that are soon to unfold.</p>
+<p>To encode whether each segment is on or off, we only need 7 bits. Therefore, we can encode the entire state of the display in a single byte. The 8th bit is usually used for the decimal point as shown below.</p>
+<p><img src="/seven_segment_display/7_segment_display_labeled.svg" alt="Seven Segment Display Labeled" /></p>
+<p>I wanted to implement this one-byte encoding myself. This is my attempt at it,</p>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">main</span><span>() {
+</span><span>    </span><span style="color:#8959a8;">let</span><span> state </span><span style="color:#3e999f;">=</span><span> SevenSegmentState {
+</span><span>        a: </span><span style="color:#f07219;">true</span><span>,
+</span><span>        b: </span><span style="color:#f07219;">false</span><span>,
+</span><span>        c: </span><span style="color:#f07219;">true</span><span>,
+</span><span>        d: </span><span style="color:#f07219;">false</span><span>,
+</span><span>        e: </span><span style="color:#f07219;">true</span><span>,
+</span><span>        f: </span><span style="color:#f07219;">false</span><span>,
+</span><span>        g: </span><span style="color:#f07219;">true</span><span>,
+</span><span>    };
+</span><span>
+</span><span>    </span><span style="color:#8959a8;">let</span><span> encoded: </span><span style="color:#8959a8;">u8 </span><span style="color:#3e999f;">=</span><span> state.</span><span style="color:#4271ae;">into</span><span>();
+</span><span>    println!(</span><span style="color:#839c00;">&quot;</span><span>{:b}</span><span style="color:#839c00;">&quot;</span><span>, encoded);
+</span><span>
+</span><span>    </span><span style="color:#8959a8;">let</span><span> decoded: SevenSegmentState </span><span style="color:#3e999f;">=</span><span> encoded.</span><span style="color:#4271ae;">into</span><span>();
+</span><span>    println!(</span><span style="color:#839c00;">&quot;</span><span>{:?}</span><span style="color:#839c00;">&quot;</span><span>, decoded);
+</span><span>}
+</span><span>
+</span><span>#[</span><span style="color:#c82728;">derive</span><span>(Debug)]
+</span><span style="color:#8959a8;">struct </span><span>SevenSegmentState {
+</span><span>    </span><span style="color:#c82728;">a</span><span>: </span><span style="color:#8959a8;">bool</span><span>,
+</span><span>    </span><span style="color:#c82728;">b</span><span>: </span><span style="color:#8959a8;">bool</span><span>,
+</span><span>    </span><span style="color:#c82728;">c</span><span>: </span><span style="color:#8959a8;">bool</span><span>,
+</span><span>    </span><span style="color:#c82728;">d</span><span>: </span><span style="color:#8959a8;">bool</span><span>,
+</span><span>    </span><span style="color:#c82728;">e</span><span>: </span><span style="color:#8959a8;">bool</span><span>,
+</span><span>    </span><span style="color:#c82728;">f</span><span>: </span><span style="color:#8959a8;">bool</span><span>,
+</span><span>    </span><span style="color:#c82728;">g</span><span>: </span><span style="color:#8959a8;">bool</span><span>,
+</span><span>}
+</span><span>
+</span><span style="color:#8959a8;">impl </span><span style="color:#c99e00;">From</span><span>&lt;</span><span style="color:#8959a8;">u8</span><span>&gt; </span><span style="color:#8959a8;">for </span><span>SevenSegmentState {
+</span><span>    </span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">from</span><span>(</span><span style="color:#f07219;">value</span><span>: </span><span style="color:#8959a8;">u8</span><span>) -&gt; </span><span style="color:#8959a8;">Self </span><span>{
+</span><span>        </span><span style="color:#8959a8;">Self </span><span>{
+</span><span>            a: value </span><span style="color:#3e999f;">&amp; </span><span style="color:#f07219;">0b00000001 </span><span style="color:#3e999f;">&gt; </span><span style="color:#f07219;">0</span><span>,
+</span><span>            b: value </span><span style="color:#3e999f;">&amp; </span><span style="color:#f07219;">0b00000010 </span><span style="color:#3e999f;">&gt; </span><span style="color:#f07219;">0</span><span>,
+</span><span>            c: value </span><span style="color:#3e999f;">&amp; </span><span style="color:#f07219;">0b00000100 </span><span style="color:#3e999f;">&gt; </span><span style="color:#f07219;">0</span><span>,
+</span><span>            d: value </span><span style="color:#3e999f;">&amp; </span><span style="color:#f07219;">0b00001000 </span><span style="color:#3e999f;">&gt; </span><span style="color:#f07219;">0</span><span>,
+</span><span>            e: value </span><span style="color:#3e999f;">&amp; </span><span style="color:#f07219;">0b00010000 </span><span style="color:#3e999f;">&gt; </span><span style="color:#f07219;">0</span><span>,
+</span><span>            f: value </span><span style="color:#3e999f;">&amp; </span><span style="color:#f07219;">0b00100000 </span><span style="color:#3e999f;">&gt; </span><span style="color:#f07219;">0</span><span>,
+</span><span>            g: value </span><span style="color:#3e999f;">&amp; </span><span style="color:#f07219;">0b01000000 </span><span style="color:#3e999f;">&gt; </span><span style="color:#f07219;">0</span><span>,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#8959a8;">impl </span><span style="color:#c99e00;">From</span><span>&lt;SevenSegmentState&gt; </span><span style="color:#8959a8;">for </span><span>u8 {
+</span><span>    </span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">from</span><span>(</span><span style="color:#f07219;">value</span><span>: SevenSegmentState) -&gt; </span><span style="color:#8959a8;">Self </span><span>{
+</span><span>        </span><span style="color:#8959a8;">let</span><span> SevenSegmentState { a, b, c, d, e, f, g } </span><span style="color:#3e999f;">=</span><span> value;
+</span><span>        (a </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">u8</span><span>) </span><span style="color:#3e999f;">|
+</span><span>        (b </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">u8</span><span>) </span><span style="color:#3e999f;">&lt;&lt; </span><span style="color:#f07219;">1 </span><span style="color:#3e999f;">|
+</span><span>        (c </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">u8</span><span>) </span><span style="color:#3e999f;">&lt;&lt; </span><span style="color:#f07219;">2 </span><span style="color:#3e999f;">|
+</span><span>        (d </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">u8</span><span>) </span><span style="color:#3e999f;">&lt;&lt; </span><span style="color:#f07219;">3 </span><span style="color:#3e999f;">|
+</span><span>        (e </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">u8</span><span>) </span><span style="color:#3e999f;">&lt;&lt; </span><span style="color:#f07219;">4 </span><span style="color:#3e999f;">|
+</span><span>        (f </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">u8</span><span>) </span><span style="color:#3e999f;">&lt;&lt; </span><span style="color:#f07219;">5 </span><span style="color:#3e999f;">|
+</span><span>        (g </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">u8</span><span>) </span><span style="color:#3e999f;">&lt;&lt; </span><span style="color:#f07219;">6
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<pre style="background-color:#f9f9f9;color:#111111;"><code><span>Output:
+</span><span>1010101
+</span><span>SevenSegmentState { a: true, b: false, c: true, d: false, e: true, f: false, g: true }
+</span></code></pre>
 
   </div>
 </article>
