@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Oscar Puente</title>
     <link rel="stylesheet" href="./../../page.css">
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$']]}});
+    </script>
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
 </head>
 
 <body>
@@ -46,23 +52,313 @@
     
 <article class="blog-post">
   <header>
-    <h3 itemprop="name headline">Fluid simulation
+    <h3 itemprop="name headline">Simulating 2D Fluid Dynamics in Rust: A Dive into Computational Fluid Dynamics
       <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
         <span itemprop="name">Oscar Puente</span>
       </span>
       <span class="reading-time">
         
-        (1 min. read)
+        (18 min. read)
       </span>
     </h3>
     <span class="shared">
-      Posted on <span itemprop="datePublished">2020-09-16</span>
+      Posted on <span itemprop="datePublished">2021-09-16</span>
     </span>
   </header>
   <div itemprop="articleBody" class="hyphenate">
-    <p>🚧 Under construction: I am currently transcribing this entry from my archives. It will be available soon.</p>
+    <p>I recently finished <a href="https://doc.rust-lang.org/stable/book/">The Rust Book</a> and wanted to try something a little more complex. So I decided to translate into Rust a fluid simulation I had written in Java a couple of years ago while following <a href="https://youtu.be/alhpH6ECFvQ?si=A8itmEw1kGtRzVbM">Daniel Shiffman's challenge on fluid simulations</a>. This program simulates an uncompressible fluid with some dye in it, so we can see the dynamics of the fluids.</p>
 <span id="continue-reading"></span>
-<p>As we transition from the introductory phase, we encounter a similar placeholder in the content section. This paragraph, like a blank canvas awaiting strokes of inspiration, anticipates the forthcoming substance that will fill this space. Its purpose is to validate the formatting and arrangement of the content area, guaranteeing that the visual and structural aspects continue to seamlessly integrate. Just as a symphony begins with a few preliminary notes, this paragraph signifies the prelude to the substantive discussions and insights that are soon to unfold.</p>
+<p>Before digging into the code, here is the final result:</p>
+<ul>
+<li>Click and drag to interact with the simulation.</li>
+<li>Press <strong>R</strong> to restart the simulation.</li>
+</ul>
+<!-- you draw the script like this -->
+<p><canvas class="canvas" id="bevy" width="400" height="300"></canvas></p>
+<!-- and you can load the generated .js like this, it can be at the end of the file -->
+<script type="module">
+    import '/restart-audio-context.js'
+    import init, { fluid_sim } from "/pkg_fluid_sim/fluid_simulation.js";
+    const canvasEl = document.getElementById('bevy');
+    let once = false;
+    const observer_callback = (_mutations, _observer) => {
+        if (!once) {
+            // Lock the canvas aspect ratio to prevent the fit_canvas_to_parent setting from creating a feedback loop causing the canvas to grow on resize
+            canvasEl.style.aspectRatio = canvasEl.attributes.width.value / canvasEl.attributes.height.value;
+            once = true;
+        }
+    };
+    const observer = new MutationObserver(observer_callback);
+    const config = { attributeFilter: ['width', 'height'] };
+    observer.observe(canvasEl, config);
+    init().then(() => {
+        fluid_sim();
+    }).catch((error) => {
+        if (!error.message.startsWith("Using exceptions for control flow, don't mind me. This isn't actually an error!")) {
+            throw error;
+        }
+    });
+</script>
+<h2 id="introducing-the-fluidgrid-struct"><a class="zola-anchor" href="#introducing-the-fluidgrid-struct" aria-label="Anchor link for: introducing-the-fluidgrid-struct">Introducing the <code>FluidGrid</code> Struct</a></h2>
+<p>Let's first discuss the core data structure in this simulation.</p>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">struct </span><span>FluidGrid {
+</span><span>    </span><span style="color:#c82728;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>,
+</span><span>    </span><span style="color:#c82728;">diffusion</span><span>: </span><span style="color:#8959a8;">f32</span><span>,
+</span><span>    </span><span style="color:#c82728;">viscosity</span><span>: </span><span style="color:#8959a8;">f32</span><span>,
+</span><span>    </span><span style="color:#c82728;">dye</span><span>: </span><span style="color:#c99e00;">Vec</span><span>&lt;</span><span style="color:#8959a8;">f32</span><span>&gt;,
+</span><span>    </span><span style="color:#c82728;">vx</span><span>: </span><span style="color:#c99e00;">Vec</span><span>&lt;</span><span style="color:#8959a8;">f32</span><span>&gt;,
+</span><span>    </span><span style="color:#c82728;">vy</span><span>: </span><span style="color:#c99e00;">Vec</span><span>&lt;</span><span style="color:#8959a8;">f32</span><span>&gt;,
+</span><span>    </span><span style="color:#c82728;">dye_next</span><span>: </span><span style="color:#c99e00;">Vec</span><span>&lt;</span><span style="color:#8959a8;">f32</span><span>&gt;,
+</span><span>    </span><span style="color:#c82728;">vx_next</span><span>: </span><span style="color:#c99e00;">Vec</span><span>&lt;</span><span style="color:#8959a8;">f32</span><span>&gt;,
+</span><span>    </span><span style="color:#c82728;">vy_next</span><span>: </span><span style="color:#c99e00;">Vec</span><span>&lt;</span><span style="color:#8959a8;">f32</span><span>&gt;,
+</span><span>}
+</span></code></pre>
+<ul>
+<li><code>size</code>: Specifies the size of the grid. The simulation operates over a square grid of <code>size x size</code>.</li>
+<li><code>diffusion</code>: The rate at which the dye will spread over the grid.</li>
+<li><code>viscosity</code>: Measures how &quot;sticky&quot; or &quot;thick&quot; the fluid is. Higher values mean a slower, more viscous fluid.</li>
+<li><code>dye</code>, <code>vx</code>, <code>vy</code>: Store the current state of dye concentrations and velocity fields (x and y components).</li>
+<li><code>dye_next</code>, <code>vx_next</code>, <code>vy_next</code>: Store the &quot;next&quot; state of dye concentrations and velocity fields (x and y components).</li>
+</ul>
+<h2 id="initializing-the-fluidgrid"><a class="zola-anchor" href="#initializing-the-fluidgrid" aria-label="Anchor link for: initializing-the-fluidgrid">Initializing the <code>FluidGrid</code></a></h2>
+<p>The <code>new</code> function is pretty straightforward. It initializes the <code>FluidGrid</code> with zeros and the size, diffusion rate, and viscosity you specify.</p>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">new</span><span>(</span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>, </span><span style="color:#f07219;">diffusion</span><span>: </span><span style="color:#8959a8;">f32</span><span>, </span><span style="color:#f07219;">viscosity</span><span>: </span><span style="color:#8959a8;">f32</span><span>) -&gt; </span><span style="color:#8959a8;">Self </span><span>{
+</span><span>    </span><span style="color:#8959a8;">Self </span><span>{
+</span><span>        size,
+</span><span>        diffusion,
+</span><span>        viscosity,
+</span><span>        dye_next: vec![</span><span style="color:#f07219;">0.0</span><span>; size </span><span style="color:#3e999f;">*</span><span> size],
+</span><span>        vx_next: vec![</span><span style="color:#f07219;">0.0</span><span>; size </span><span style="color:#3e999f;">*</span><span> size],
+</span><span>        vy_next: vec![</span><span style="color:#f07219;">0.0</span><span>; size </span><span style="color:#3e999f;">*</span><span> size],
+</span><span>        dye: vec![</span><span style="color:#f07219;">0.0</span><span>; size </span><span style="color:#3e999f;">*</span><span> size],
+</span><span>        vx: vec![</span><span style="color:#f07219;">0.0</span><span>; size </span><span style="color:#3e999f;">*</span><span> size],
+</span><span>        vy: vec![</span><span style="color:#f07219;">0.0</span><span>; size </span><span style="color:#3e999f;">*</span><span> size],
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h2 id="the-simulation-step"><a class="zola-anchor" href="#the-simulation-step" aria-label="Anchor link for: the-simulation-step">The Simulation Step</a></h2>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">step</span><span>(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#f07219;">self</span><span>, </span><span style="color:#f07219;">dt</span><span>: </span><span style="color:#8959a8;">f32</span><span>) {
+</span><span>    </span><span style="color:#c82728;">self</span><span>.</span><span style="color:#4271ae;">diffuse_velocity</span><span>(dt);
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::project(
+</span><span>        </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vx,
+</span><span>        </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vy,
+</span><span>        </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vx_next,
+</span><span>        </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vy_next,
+</span><span>        </span><span style="color:#c82728;">self</span><span>.size,
+</span><span>    );
+</span><span>
+</span><span>    </span><span style="color:#c82728;">self</span><span>.</span><span style="color:#4271ae;">advect_velocity</span><span>(dt);
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::project(
+</span><span>        </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vx_next,
+</span><span>        </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vy_next,
+</span><span>        </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vx,
+</span><span>        </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vy,
+</span><span>        </span><span style="color:#c82728;">self</span><span>.size,
+</span><span>    );
+</span><span>
+</span><span>    </span><span style="color:#c82728;">self</span><span>.</span><span style="color:#4271ae;">diffuse_dye</span><span>(dt);
+</span><span>    </span><span style="color:#c82728;">self</span><span>.</span><span style="color:#4271ae;">advect_dye</span><span>(dt);
+</span><span>}
+</span></code></pre>
+<p>The <code>step()</code> function is where the magic happens. It performs four steps:</p>
+<ol>
+<li><em>Diffuse Velocity</em>: Updates the velocity field by taking into account the viscosity of the fluid.</li>
+<li><em>Advect Velocity</em>: Moves the velocity along itself, meaning it advects the velocity field.</li>
+<li><em>Project</em>: Makes sure the velocity field is mass-conserving, since we are simulating an uncompressible fluid.</li>
+<li><em>Diffuse and Advect Dye</em>: Diffuses the dye based on its diffusion rate and then moves it along the velocity field.</li>
+</ol>
+<p>Let's go into some detail for these.</p>
+<h2 id="diffusing-the-velocity"><a class="zola-anchor" href="#diffusing-the-velocity" aria-label="Anchor link for: diffusing-the-velocity">Diffusing the Velocity</a></h2>
+<p>In this method, we use a linear solver to update the velocity of the fluid considering its viscosity. The loop iterates a set number of times (<code>ITER</code>), each time solving a system of linear equations to reach an increasingly accurate solution.</p>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">diffuse_velocity</span><span>(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#f07219;">self</span><span>, </span><span style="color:#f07219;">dt</span><span>: </span><span style="color:#8959a8;">f32</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">let</span><span> a </span><span style="color:#3e999f;">=</span><span> dt </span><span style="color:#3e999f;">* </span><span style="color:#c82728;">self</span><span>.viscosity </span><span style="color:#3e999f;">* </span><span>((</span><span style="color:#c82728;">self</span><span>.size </span><span style="color:#3e999f;">- </span><span style="color:#f07219;">2</span><span>) </span><span style="color:#3e999f;">* </span><span>(</span><span style="color:#c82728;">self</span><span>.size </span><span style="color:#3e999f;">- </span><span style="color:#f07219;">2</span><span>)) </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32</span><span>;
+</span><span>    </span><span style="color:#8959a8;">for </span><span style="color:#3e999f;">_ in </span><span style="color:#f07219;">0</span><span style="color:#3e999f;">..</span><span>ITER {
+</span><span>        </span><span style="color:#8959a8;">Self</span><span>::lin_solve(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vx, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vx_next, a, </span><span style="color:#f07219;">1.0 </span><span style="color:#3e999f;">+ </span><span style="color:#f07219;">4.0 </span><span style="color:#3e999f;">*</span><span> a, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>        </span><span style="color:#8959a8;">Self</span><span>::lin_solve(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vy, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vy_next, a, </span><span style="color:#f07219;">1.0 </span><span style="color:#3e999f;">+ </span><span style="color:#f07219;">4.0 </span><span style="color:#3e999f;">*</span><span> a, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>        </span><span style="color:#8959a8;">Self</span><span>::set_bounds_x(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vx, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>        </span><span style="color:#8959a8;">Self</span><span>::set_bounds_y(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vy, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h2 id="diffusing-the-dye"><a class="zola-anchor" href="#diffusing-the-dye" aria-label="Anchor link for: diffusing-the-dye">Diffusing the Dye</a></h2>
+<p>This part is similar to <code>diffuse_velocity()</code>, but it diffuses the dye concentrations.</p>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">diffuse_dye</span><span>(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#f07219;">self</span><span>, </span><span style="color:#f07219;">dt</span><span>: </span><span style="color:#8959a8;">f32</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">let</span><span> a </span><span style="color:#3e999f;">=</span><span> dt </span><span style="color:#3e999f;">* </span><span style="color:#c82728;">self</span><span>.diffusion </span><span style="color:#3e999f;">* </span><span>((</span><span style="color:#c82728;">self</span><span>.size </span><span style="color:#3e999f;">- </span><span style="color:#f07219;">2</span><span>) </span><span style="color:#3e999f;">* </span><span>(</span><span style="color:#c82728;">self</span><span>.size </span><span style="color:#3e999f;">- </span><span style="color:#f07219;">2</span><span>)) </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32</span><span>;
+</span><span>    </span><span style="color:#8959a8;">for </span><span style="color:#3e999f;">_ in </span><span style="color:#f07219;">0</span><span style="color:#3e999f;">..</span><span>ITER {
+</span><span>        </span><span style="color:#8959a8;">Self</span><span>::lin_solve(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.dye, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.dye_next, a, </span><span style="color:#f07219;">1.0 </span><span style="color:#3e999f;">+ </span><span style="color:#f07219;">4.0 </span><span style="color:#3e999f;">*</span><span> a, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>        </span><span style="color:#8959a8;">Self</span><span>::set_bounds_dye(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.dye, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h2 id="projection"><a class="zola-anchor" href="#projection" aria-label="Anchor link for: projection">Projection</a></h2>
+<p>In fluid simulations, the conservation of mass is a critical aspect. The <code>project()</code> function is here to enforce this. It eliminates divergence from the velocity field, making it mass-conserving.</p>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">project</span><span>(
+</span><span>    </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#f07219;">self</span><span>, </span><span style="color:#f07219;">vx</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">vy</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">p</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">div</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize
+</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">for</span><span> j </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>        </span><span style="color:#8959a8;">for</span><span> i </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>            div[</span><span style="color:#4271ae;">index</span><span>(size, i, j)] </span><span style="color:#3e999f;">= -</span><span style="color:#f07219;">0.5 </span><span style="color:#3e999f;">* </span><span>(
+</span><span>            vx[</span><span style="color:#4271ae;">index</span><span>(size, i</span><span style="color:#3e999f;">+</span><span style="color:#f07219;">1</span><span>, j  )]
+</span><span>            </span><span style="color:#3e999f;">-</span><span>vx[</span><span style="color:#4271ae;">index</span><span>(size, i</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, j  )]
+</span><span>            </span><span style="color:#3e999f;">+</span><span>vy[</span><span style="color:#4271ae;">index</span><span>(size, i, j</span><span style="color:#3e999f;">+</span><span style="color:#f07219;">1</span><span>)]
+</span><span>            </span><span style="color:#3e999f;">-</span><span>vy[</span><span style="color:#4271ae;">index</span><span>(size, i, j</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)]
+</span><span>            ) </span><span style="color:#3e999f;">/</span><span> size </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32</span><span>;
+</span><span>            p[</span><span style="color:#4271ae;">index</span><span>(size, i, j)] </span><span style="color:#3e999f;">= </span><span style="color:#f07219;">0.0</span><span>;
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_dye(div, size);
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_dye(p, size);
+</span><span>
+</span><span>    </span><span style="color:#8959a8;">for </span><span style="color:#3e999f;">_ in </span><span style="color:#f07219;">0</span><span style="color:#3e999f;">..</span><span>ITER {
+</span><span>        </span><span style="color:#8959a8;">Self</span><span>::lin_solve(p, div, </span><span style="color:#f07219;">1.</span><span>, </span><span style="color:#f07219;">4.</span><span>, size);
+</span><span>        </span><span style="color:#8959a8;">Self</span><span>::set_bounds_dye(vx, size);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#8959a8;">for</span><span> j </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>        </span><span style="color:#8959a8;">for</span><span> i </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>            vx[</span><span style="color:#4271ae;">index</span><span>(size, i, j)] </span><span style="color:#3e999f;">-=
+</span><span>                </span><span style="color:#f07219;">0.5 </span><span style="color:#3e999f;">* </span><span>(p[</span><span style="color:#4271ae;">index</span><span>(size, i</span><span style="color:#3e999f;">+</span><span style="color:#f07219;">1</span><span>, j)] </span><span style="color:#3e999f;">-</span><span> p[</span><span style="color:#4271ae;">index</span><span>(size, i</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, j)]) </span><span style="color:#3e999f;">*</span><span> size </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32</span><span>;
+</span><span>            vy[</span><span style="color:#4271ae;">index</span><span>(size, i, j)] </span><span style="color:#3e999f;">-=
+</span><span>                </span><span style="color:#f07219;">0.5 </span><span style="color:#3e999f;">* </span><span>(p[</span><span style="color:#4271ae;">index</span><span>(size, i, j</span><span style="color:#3e999f;">+</span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">-</span><span> p[</span><span style="color:#4271ae;">index</span><span>(size, i, j</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)]) </span><span style="color:#3e999f;">*</span><span> size </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32</span><span>;
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_x(vx, size);
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_y(vy, size);
+</span><span>}
+</span></code></pre>
+<h2 id="advecting-velocity-and-dye"><a class="zola-anchor" href="#advecting-velocity-and-dye" aria-label="Anchor link for: advecting-velocity-and-dye">Advecting Velocity and Dye</a></h2>
+<p>Finally, we have advection. Think of it like this: the fluid at some cell moves—or &quot;is advected&quot;—by the velocity at that cell. Both velocity and dye are advected to simulate this movement.</p>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">advect_velocity</span><span>(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#f07219;">self</span><span>, </span><span style="color:#f07219;">dt</span><span>: </span><span style="color:#8959a8;">f32</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::advect(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vx_next, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vx, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vx, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vy, dt, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::advect(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vy_next, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vy, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vx, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vy, dt, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_x(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vx_next, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_y(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vy_next, </span><span style="color:#c82728;">self</span><span>.size);        
+</span><span>}
+</span><span>
+</span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">advect_dye</span><span>(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#f07219;">self</span><span>, </span><span style="color:#f07219;">dt</span><span>: </span><span style="color:#8959a8;">f32</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::advect(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.dye_next, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.dye, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vx_next, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vy_next, dt, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_dye(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.dye_next, </span><span style="color:#c82728;">self</span><span>.size);
+</span><span>}
+</span><span>
+</span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">advect</span><span>(</span><span style="color:#f07219;">d</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">d0</span><span>: </span><span style="color:#3e999f;">&amp;</span><span>[</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">vx</span><span>: </span><span style="color:#3e999f;">&amp;</span><span>[</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">vy</span><span>: </span><span style="color:#3e999f;">&amp;</span><span>[</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">dt</span><span>: </span><span style="color:#8959a8;">f32</span><span>, </span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">let</span><span> dtx </span><span style="color:#3e999f;">=</span><span> dt </span><span style="color:#3e999f;">* </span><span>(size </span><span style="color:#3e999f;">- </span><span style="color:#f07219;">2</span><span>) </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32</span><span>;
+</span><span>    </span><span style="color:#8959a8;">let</span><span> dty </span><span style="color:#3e999f;">=</span><span> dt </span><span style="color:#3e999f;">* </span><span>(size </span><span style="color:#3e999f;">- </span><span style="color:#f07219;">2</span><span>) </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32</span><span>;
+</span><span>
+</span><span>    </span><span style="color:#8959a8;">for</span><span> j </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>        </span><span style="color:#8959a8;">for</span><span> i </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>            </span><span style="color:#8959a8;">let</span><span> x </span><span style="color:#3e999f;">=</span><span> i </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32 </span><span style="color:#3e999f;">-</span><span> dtx </span><span style="color:#3e999f;">*</span><span> vx[</span><span style="color:#4271ae;">index</span><span>(size, i, j)];
+</span><span>            </span><span style="color:#8959a8;">let</span><span> y </span><span style="color:#3e999f;">=</span><span> j </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32 </span><span style="color:#3e999f;">-</span><span> dty </span><span style="color:#3e999f;">*</span><span> vy[</span><span style="color:#4271ae;">index</span><span>(size, i, j)];
+</span><span>
+</span><span>            </span><span style="color:#8959a8;">let</span><span> x </span><span style="color:#3e999f;">=</span><span> x.</span><span style="color:#4271ae;">clamp</span><span>(</span><span style="color:#f07219;">0.5</span><span>, size </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32 </span><span style="color:#3e999f;">+ </span><span style="color:#f07219;">0.5</span><span>);
+</span><span>            </span><span style="color:#8959a8;">let</span><span> i0 </span><span style="color:#3e999f;">=</span><span> x.</span><span style="color:#4271ae;">floor</span><span>();
+</span><span>            </span><span style="color:#8959a8;">let</span><span> i1 </span><span style="color:#3e999f;">=</span><span> i0 </span><span style="color:#3e999f;">+ </span><span style="color:#f07219;">1.0</span><span>;
+</span><span>
+</span><span>            </span><span style="color:#8959a8;">let</span><span> y </span><span style="color:#3e999f;">=</span><span> y.</span><span style="color:#4271ae;">clamp</span><span>(</span><span style="color:#f07219;">0.5</span><span>, size </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">f32 </span><span style="color:#3e999f;">+ </span><span style="color:#f07219;">0.5</span><span>);
+</span><span>            </span><span style="color:#8959a8;">let</span><span> j0 </span><span style="color:#3e999f;">=</span><span> y.</span><span style="color:#4271ae;">floor</span><span>();
+</span><span>            </span><span style="color:#8959a8;">let</span><span> j1 </span><span style="color:#3e999f;">=</span><span> j0 </span><span style="color:#3e999f;">+ </span><span style="color:#f07219;">1.0</span><span>;
+</span><span>
+</span><span>            </span><span style="color:#8959a8;">let</span><span> s1 </span><span style="color:#3e999f;">=</span><span> x </span><span style="color:#3e999f;">-</span><span> i0;
+</span><span>            </span><span style="color:#8959a8;">let</span><span> s0 </span><span style="color:#3e999f;">= </span><span style="color:#f07219;">1.0 </span><span style="color:#3e999f;">-</span><span> s1;
+</span><span>            </span><span style="color:#8959a8;">let</span><span> t1 </span><span style="color:#3e999f;">=</span><span> y </span><span style="color:#3e999f;">-</span><span> j0;
+</span><span>            </span><span style="color:#8959a8;">let</span><span> t0 </span><span style="color:#3e999f;">= </span><span style="color:#f07219;">1.0 </span><span style="color:#3e999f;">-</span><span> t1;
+</span><span>
+</span><span>            </span><span style="color:#8959a8;">let</span><span> i0i </span><span style="color:#3e999f;">=</span><span> i0 </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">usize</span><span>;
+</span><span>            </span><span style="color:#8959a8;">let</span><span> i1i </span><span style="color:#3e999f;">=</span><span> i1 </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">usize</span><span>;
+</span><span>            </span><span style="color:#8959a8;">let</span><span> j0i </span><span style="color:#3e999f;">=</span><span> j0 </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">usize</span><span>;
+</span><span>            </span><span style="color:#8959a8;">let</span><span> j1i </span><span style="color:#3e999f;">=</span><span> j1 </span><span style="color:#3e999f;">as </span><span style="color:#8959a8;">usize</span><span>;
+</span><span>
+</span><span>            d[</span><span style="color:#4271ae;">index</span><span>(size, i, j)] </span><span style="color:#3e999f;">=
+</span><span>                s0 </span><span style="color:#3e999f;">* </span><span>(t0 </span><span style="color:#3e999f;">*</span><span> d0[</span><span style="color:#4271ae;">index</span><span>(size, i0i, j0i)] </span><span style="color:#3e999f;">+</span><span> t1 </span><span style="color:#3e999f;">*</span><span> d0[</span><span style="color:#4271ae;">index</span><span>(size, i0i, j1i)]) </span><span style="color:#3e999f;">+
+</span><span>                s1 </span><span style="color:#3e999f;">* </span><span>(t0 </span><span style="color:#3e999f;">*</span><span> d0[</span><span style="color:#4271ae;">index</span><span>(size, i1i, j0i)] </span><span style="color:#3e999f;">+</span><span> t1 </span><span style="color:#3e999f;">*</span><span> d0[</span><span style="color:#4271ae;">index</span><span>(size, i1i, j1i)]);
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h2 id="helper-functions"><a class="zola-anchor" href="#helper-functions" aria-label="Anchor link for: helper-functions">Helper Functions</a></h2>
+<p>The <code>index</code> function to convert from two-dimensional indices to a one-dimnensional index.</p>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#c82728;">inline</span><span>]
+</span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">index</span><span>(</span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>, </span><span style="color:#f07219;">x</span><span>: </span><span style="color:#8959a8;">usize</span><span>, </span><span style="color:#f07219;">y</span><span>: </span><span style="color:#8959a8;">usize</span><span>) -&gt; </span><span style="color:#8959a8;">usize </span><span>{
+</span><span>    </span><span style="color:#8959a8;">let</span><span> x </span><span style="color:#3e999f;">=</span><span> x.</span><span style="color:#4271ae;">clamp</span><span>(</span><span style="color:#f07219;">0</span><span>, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>);
+</span><span>    </span><span style="color:#8959a8;">let</span><span> y </span><span style="color:#3e999f;">=</span><span> y.</span><span style="color:#4271ae;">clamp</span><span>(</span><span style="color:#f07219;">0</span><span>, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>);
+</span><span>    x </span><span style="color:#3e999f;">+</span><span> y </span><span style="color:#3e999f;">*</span><span> size
+</span><span>}
+</span></code></pre>
+<p>The main logic of the fluid simulation uses two helper functions. A linear solver to advance the simulation, and the set_bounds functions to handle what happens at the borders of the simulation grid.</p>
+<pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">lin_solve</span><span>(</span><span style="color:#f07219;">x</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">px</span><span>: </span><span style="color:#3e999f;">&amp;</span><span>[</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">a</span><span>: </span><span style="color:#8959a8;">f32</span><span>, </span><span style="color:#f07219;">c</span><span>: </span><span style="color:#8959a8;">f32</span><span>, </span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">let c_inv </span><span style="color:#3e999f;">= </span><span style="color:#f07219;">1.0 </span><span style="color:#3e999f;">/</span><span> c;
+</span><span>    </span><span style="color:#8959a8;">for</span><span> j </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>        </span><span style="color:#8959a8;">for</span><span> i </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>            x[</span><span style="color:#4271ae;">index</span><span>(size, i, j)] </span><span style="color:#3e999f;">=
+</span><span>            (px[</span><span style="color:#4271ae;">index</span><span>(size, i, j)] </span><span style="color:#3e999f;">+ </span><span>(
+</span><span>                x[</span><span style="color:#4271ae;">index</span><span>(size, i</span><span style="color:#3e999f;">+</span><span style="color:#f07219;">1</span><span>, j)] </span><span style="color:#3e999f;">+
+</span><span>                x[</span><span style="color:#4271ae;">index</span><span>(size, i</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, j)] </span><span style="color:#3e999f;">+
+</span><span>                x[</span><span style="color:#4271ae;">index</span><span>(size, i, j</span><span style="color:#3e999f;">+</span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">+
+</span><span>                x[</span><span style="color:#4271ae;">index</span><span>(size, i, j</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)]
+</span><span>            ) </span><span style="color:#3e999f;">*</span><span> a) </span><span style="color:#3e999f;">* </span><span style="color:#8959a8;">c_inv</span><span>;
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">set_bounds_x</span><span>(</span><span style="color:#f07219;">x</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">for</span><span> i </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>        x[</span><span style="color:#4271ae;">index</span><span>(size, i, </span><span style="color:#f07219;">0</span><span>)]      </span><span style="color:#3e999f;">=</span><span> x[</span><span style="color:#4271ae;">index</span><span>(size, i, </span><span style="color:#f07219;">1</span><span>)];
+</span><span>        x[</span><span style="color:#4271ae;">index</span><span>(size, i, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">=</span><span> x[</span><span style="color:#4271ae;">index</span><span>(size, i, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>)];
+</span><span>    }        
+</span><span>    </span><span style="color:#8959a8;">for</span><span> j </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>        x[</span><span style="color:#4271ae;">index</span><span>(size, </span><span style="color:#f07219;">0</span><span>, j)]      </span><span style="color:#3e999f;">= -</span><span>x[</span><span style="color:#4271ae;">index</span><span>(size, </span><span style="color:#f07219;">1</span><span>, j)];
+</span><span>        x[</span><span style="color:#4271ae;">index</span><span>(size, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, j)] </span><span style="color:#3e999f;">= -</span><span>x[</span><span style="color:#4271ae;">index</span><span>(size, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>, j)];
+</span><span>    }    
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_corners(x, size);
+</span><span>}
+</span><span>
+</span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">set_bounds_y</span><span>(</span><span style="color:#f07219;">y</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">for</span><span> i </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>        y[</span><span style="color:#4271ae;">index</span><span>(size, i, </span><span style="color:#f07219;">0</span><span>)]   </span><span style="color:#3e999f;">= -</span><span>y[</span><span style="color:#4271ae;">index</span><span>(size, i, </span><span style="color:#f07219;">1</span><span>)];
+</span><span>        y[</span><span style="color:#4271ae;">index</span><span>(size, i, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">= -</span><span>y[</span><span style="color:#4271ae;">index</span><span>(size, i, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>)];
+</span><span>    }        
+</span><span>    </span><span style="color:#8959a8;">for</span><span> j </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>) {
+</span><span>        y[</span><span style="color:#4271ae;">index</span><span>(size, </span><span style="color:#f07219;">0</span><span>, j)]   </span><span style="color:#3e999f;">=</span><span> y[</span><span style="color:#4271ae;">index</span><span>(size, </span><span style="color:#f07219;">1</span><span>, j)];
+</span><span>        y[</span><span style="color:#4271ae;">index</span><span>(size, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, j)] </span><span style="color:#3e999f;">=</span><span> y[</span><span style="color:#4271ae;">index</span><span>(size, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>, j)];
+</span><span>    }    
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_corners(y, size);
+</span><span>}
+</span><span>
+</span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">set_bounds_dye</span><span>(</span><span style="color:#f07219;">dye</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">for</span><span> i </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)  {
+</span><span>        dye[</span><span style="color:#4271ae;">index</span><span>(size, i, </span><span style="color:#f07219;">0</span><span>)] </span><span style="color:#3e999f;">=</span><span> dye[</span><span style="color:#4271ae;">index</span><span>(size, i, </span><span style="color:#f07219;">1</span><span>)];
+</span><span>        dye[</span><span style="color:#4271ae;">index</span><span>(size, i, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">=</span><span> dye[</span><span style="color:#4271ae;">index</span><span>(size, i, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>)];
+</span><span>    }        
+</span><span>    </span><span style="color:#8959a8;">for</span><span> j </span><span style="color:#3e999f;">in </span><span style="color:#f07219;">1</span><span style="color:#3e999f;">..</span><span>(size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)  {
+</span><span>        dye[</span><span style="color:#4271ae;">index</span><span>(size, </span><span style="color:#f07219;">0</span><span>, j)] </span><span style="color:#3e999f;">=</span><span> dye[</span><span style="color:#4271ae;">index</span><span>(size, </span><span style="color:#f07219;">1</span><span>, j)];
+</span><span>        dye[</span><span style="color:#4271ae;">index</span><span>(size, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, j)] </span><span style="color:#3e999f;">=</span><span> dye[</span><span style="color:#4271ae;">index</span><span>(size, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>, j)];
+</span><span>    }    
+</span><span>    </span><span style="color:#8959a8;">Self</span><span>::set_bounds_corners(dye, size);
+</span><span>}
+</span><span>
+</span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">set_bounds_corners</span><span>(</span><span style="color:#f07219;">x</span><span>: </span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut</span><span> [</span><span style="color:#8959a8;">f32</span><span>], </span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>) {
+</span><span>    </span><span style="color:#8959a8;">let</span><span> n </span><span style="color:#3e999f;">=</span><span> size;
+</span><span>        x[</span><span style="color:#4271ae;">index</span><span>(n, </span><span style="color:#f07219;">0</span><span>, </span><span style="color:#f07219;">0</span><span>)] </span><span style="color:#3e999f;">=
+</span><span>            (x[</span><span style="color:#4271ae;">index</span><span>(n, </span><span style="color:#f07219;">1</span><span>, </span><span style="color:#f07219;">0</span><span>)] </span><span style="color:#3e999f;">+</span><span> x[</span><span style="color:#4271ae;">index</span><span>(n, </span><span style="color:#f07219;">0</span><span>, </span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">+</span><span> x[</span><span style="color:#4271ae;">index</span><span>(n, </span><span style="color:#f07219;">0</span><span>, </span><span style="color:#f07219;">0</span><span>)]) </span><span style="color:#3e999f;">/ </span><span style="color:#f07219;">3.0</span><span>;
+</span><span>        x[</span><span style="color:#4271ae;">index</span><span>(n, </span><span style="color:#f07219;">0</span><span>, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">=
+</span><span>            (x[</span><span style="color:#4271ae;">index</span><span>(n, </span><span style="color:#f07219;">1</span><span>, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">+</span><span> x[</span><span style="color:#4271ae;">index</span><span>(n, </span><span style="color:#f07219;">0</span><span>, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>)] </span><span style="color:#3e999f;">+</span><span> x[</span><span style="color:#4271ae;">index</span><span>(n, </span><span style="color:#f07219;">0</span><span>, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)]) </span><span style="color:#3e999f;">/ </span><span style="color:#f07219;">3.0</span><span>;
+</span><span>        x[</span><span style="color:#4271ae;">index</span><span>(n, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, </span><span style="color:#f07219;">0</span><span>)] </span><span style="color:#3e999f;">=
+</span><span>            (x[</span><span style="color:#4271ae;">index</span><span>(n, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>, </span><span style="color:#f07219;">0</span><span>)] </span><span style="color:#3e999f;">+</span><span> x[</span><span style="color:#4271ae;">index</span><span>(n, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, </span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">+</span><span> x[</span><span style="color:#4271ae;">index</span><span>(n, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, </span><span style="color:#f07219;">0</span><span>)]) </span><span style="color:#3e999f;">/ </span><span style="color:#f07219;">3.0</span><span>;
+</span><span>        x[</span><span style="color:#4271ae;">index</span><span>(n, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">=
+</span><span>            (x[</span><span style="color:#4271ae;">index</span><span>(n, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)] </span><span style="color:#3e999f;">+</span><span> x[</span><span style="color:#4271ae;">index</span><span>(n, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">2</span><span>)] </span><span style="color:#3e999f;">+</span><span> x[</span><span style="color:#4271ae;">index</span><span>(n, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>, n</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>)]) </span><span style="color:#3e999f;">/ </span><span style="color:#f07219;">3.0</span><span>;
+</span><span>}
+</span><span>
+</span></code></pre>
+<h2 id="performance-considerations"><a class="zola-anchor" href="#performance-considerations" aria-label="Anchor link for: performance-considerations">Performance Considerations</a></h2>
+<p>Performance is critical in computational fluid dynamics. Rust's low-level capabilities and zero-cost abstractions are particularly beneficial in optimizing this simulation.</p>
+<ol>
+<li>In-place updates: Utilizing Rust's mutable references, the simulation updates the grid states in place, avoiding unnecessary allocations.</li>
+<li>Data Locality: The use of contiguous memory (<code>Vec&lt;f32&gt;</code>) ensures cache locality, speeding up the simulation.</li>
+</ol>
+<h2 id="wrapping-up"><a class="zola-anchor" href="#wrapping-up" aria-label="Anchor link for: wrapping-up">Wrapping Up</a></h2>
+<p>Building a fluid simulation from scratch is a captivating journey. It's a splendid example of where programming meets physics, math, and a touch of artistry. Implementing it in Rust allowed me to get some hands on practice with the language and I understood the simulation process better than when I first wrote it two years ago.</p>
+<p>Happy coding!</p>
+<p>Oscar</p>
 
   </div>
 </article>

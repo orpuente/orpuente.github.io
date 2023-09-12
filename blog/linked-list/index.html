@@ -52,7 +52,7 @@
     
 <article class="blog-post">
   <header>
-    <h3 itemprop="name headline">Game of Life
+    <h3 itemprop="name headline">Deriving the type of linked list algebraically
       <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
         <span itemprop="name">Oscar Puente</span>
       </span>
@@ -62,13 +62,24 @@
       </span>
     </h3>
     <span class="shared">
-      Posted on <span itemprop="datePublished">2021-02-25</span>
+      Posted on <span itemprop="datePublished">2022-03-16</span>
     </span>
   </header>
   <div itemprop="articleBody" class="hyphenate">
-    <p>🚧 I am currently transcribing this entry from my archives. It will be available soon.</p>
+    <p>I have been studying Category Theory lately, and I came across this beautiful proof showing how to derive the type of <a href="https://en.wikipedia.org/wiki/Linked_list">linked list</a> algebraically.</p>
 <span id="continue-reading"></span>
-<p>As we transition from the introductory phase, we encounter a similar placeholder in the content section. This paragraph, like a blank canvas awaiting strokes of inspiration, anticipates the forthcoming substance that will fill this space. Its purpose is to validate the formatting and arrangement of the content area, guaranteeing that the visual and structural aspects continue to seamlessly integrate. Just as a symphony begins with a few preliminary notes, this paragraph signifies the prelude to the substantive discussions and insights that are soon to unfold.</p>
+<p>Let $T$ be some type, e.g. integer. Suppose we want to define a type $L(T)$ for a list of $T$. Note that,
+$$L(T) = \emptyset \ | \ T \ | \ T^2 \ | \ T^3 \ | \ ... $$</p>
+<p>That is, $L(T)$ is either a container with no elements, or a container with one element, or a container with two elements, and so on. This can be written algebraically as
+$$L(T) = 1 + T + T^2 + T^3 + ...$$</p>
+<p>Which is equivalent to,
+$$L(T) = \frac{1}{1 - T}$$</p>
+<p>Transforming this expression, we get
+$$L(T) (1-T) = 1$$
+$$L(T) = 1 + T \times L(T)$$</p>
+<p>We can write this back in a programmatic notation as,
+$$L(T) = \emptyset \ | \ (T, L(T))$$</p>
+<p>Meaning that $L(T)$ is either an empty container, or a pair containing an element of type $T$ in the $car$ and an element of type $L(T)$ in the $cdr$. This is just the definition of linked list we are familiar with!</p>
 
   </div>
 </article>

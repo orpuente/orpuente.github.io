@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Oscar Puente</title>
     <link rel="stylesheet" href="./../../page.css">
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$']]}});
+    </script>
+    <script type="text/javascript"
+        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
 </head>
 
 <body>
@@ -46,7 +52,7 @@
     
 <article class="blog-post">
   <header>
-    <h3 itemprop="name headline">Encoding the state of a seven-segment display in one byte
+    <h3 itemprop="name headline">Encoding the state of a seven-segment display in a byte
       <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
         <span itemprop="name">Oscar Puente</span>
       </span>
@@ -56,7 +62,7 @@
       </span>
     </h3>
     <span class="shared">
-      Posted on <span itemprop="datePublished">2019-08-24</span>
+      Posted on <span itemprop="datePublished">2020-08-24</span>
     </span>
   </header>
   <div itemprop="articleBody" class="hyphenate">
@@ -64,7 +70,7 @@
 <span id="continue-reading"></span>
 <p>To encode whether each segment is on or off, we only need 7 bits. Therefore, we can encode the entire state of the display in a single byte. The 8th bit is usually used for the decimal point as shown below.</p>
 <p><img src="/seven_segment_display/7_segment_display_labeled.svg" alt="Seven Segment Display Labeled" /></p>
-<p>I wanted to implement this one-byte encoding myself. This is my attempt at it,</p>
+<p>Recently I've been trying out <a href="https://www.rust-lang.org">Rust</a>, and I wanted to implement this one-byte encoding on it. This is my attempt at it,</p>
 <pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">main</span><span>() {
 </span><span>    </span><span style="color:#8959a8;">let</span><span> state </span><span style="color:#3e999f;">=</span><span> SevenSegmentState {
 </span><span>        a: </span><span style="color:#f07219;">true</span><span>,
