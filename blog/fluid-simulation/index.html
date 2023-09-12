@@ -167,7 +167,7 @@
 <li><em>Project</em>: Makes sure the velocity field is mass-conserving, since we are simulating an uncompressible fluid.</li>
 <li><em>Diffuse and Advect Dye</em>: Diffuses the dye based on its diffusion rate and then moves it along the velocity field.</li>
 </ol>
-<p>Let's go into some detail for these.</p>
+<p>In the following sections, I'll go into more detail for these four steps.</p>
 <h2 id="diffusing-the-velocity"><a class="zola-anchor" href="#diffusing-the-velocity" aria-label="Anchor link for: diffusing-the-velocity">Diffusing the Velocity</a></h2>
 <p>In this method, we use a linear solver to update the velocity of the fluid considering its viscosity. The loop iterates a set number of times (<code>ITER</code>), each time solving a system of linear equations to reach an increasingly accurate solution.</p>
 <pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">diffuse_velocity</span><span>(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#f07219;">self</span><span>, </span><span style="color:#f07219;">dt</span><span>: </span><span style="color:#8959a8;">f32</span><span>) {
@@ -356,7 +356,7 @@
 <li>Data Locality: The use of contiguous memory (<code>Vec&lt;f32&gt;</code>) ensures cache locality, speeding up the simulation.</li>
 </ol>
 <h2 id="wrapping-up"><a class="zola-anchor" href="#wrapping-up" aria-label="Anchor link for: wrapping-up">Wrapping Up</a></h2>
-<p>Building a fluid simulation from scratch is a captivating journey. It's a splendid example of where programming meets physics, math, and a touch of artistry. Implementing it in Rust allowed me to get some hands on practice with the language and I understood the simulation process better than when I first wrote it two years ago.</p>
+<p>Building a fluid simulation from scratch is a captivating journey. It's a great example of where programming meets physics, math, and a touch of artistry. Implementing it in Rust allowed me to get some hands-on practice with the language and to understand the simulation process better than when I first wrote it two years ago.</p>
 <p>Happy coding!</p>
 <p>Oscar</p>
 
