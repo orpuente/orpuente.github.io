@@ -1,0 +1,19 @@
+{
+  "name": "fluid-simulation",
+  "collaborators": [
+    "Oscar Puente <orpuente98@gmail.com>"
+  ],
+  "description": "A fluid simulation written in rust",
+  "version": "0.1.0",
+  "license": "MIT/Apache-2.0",
+  "files": [
+    "fluid_simulation_bg.wasm",
+    "fluid_simulation.js",
+    "fluid_simulation.d.ts"
+  ],
+  "module": "fluid_simulation.js",
+  "types": "fluid_simulation.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
