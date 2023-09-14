@@ -52,13 +52,13 @@
     
 <article class="blog-post">
   <header>
-    <h3 itemprop="name headline">PID controller
+    <h3 itemprop="name headline">Understanding PID Controllers
       <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
         <span itemprop="name">Oscar Puente</span>
       </span>
       <span class="reading-time">
         
-        (1 min. read)
+        (4 min. read)
       </span>
     </h3>
     <span class="shared">
@@ -66,9 +66,51 @@
     </span>
   </header>
   <div itemprop="articleBody" class="hyphenate">
-    <p>🚧 I am currently transcribing this entry from my archives. It will be available soon.</p>
+    <p>This week I've been learning about PID controllers while talking to my friend, <a href="https://yensabrork.myportfolio.com/about-me">Yensabro Kanashiro</a>, who is working on a self-balancing robot. I've heard about PIDs before, but I didn't know how they worked, so I decided to document what I've learned.</p>
 <span id="continue-reading"></span>
-<p>As we transition from the introductory phase, we encounter a similar placeholder in the content section. This paragraph, like a blank canvas awaiting strokes of inspiration, anticipates the forthcoming substance that will fill this space. Its purpose is to validate the formatting and arrangement of the content area, guaranteeing that the visual and structural aspects continue to seamlessly integrate. Just as a symphony begins with a few preliminary notes, this paragraph signifies the prelude to the substantive discussions and insights that are soon to unfold.</p>
+<h2 id="what-is-a-pid-controller"><a class="zola-anchor" href="#what-is-a-pid-controller" aria-label="Anchor link for: what-is-a-pid-controller">What is a PID Controller?</a></h2>
+<p>If you've worked in robotics, control systems, or even just delved into the world of algorithms, you've probably heard the acronym PID being tossed around. Whether it's stabilizing the flight of drones or regulating the temperature of a furnace, PID controllers are everywhere.</p>
+<p>PID stands for Proportional-Integral-Derivative, which are the three basic components of this type of control system. A PID controller continuously calculates the error value $e(t)$ as the difference between a measured process variable and a desired value. The controller attempts to minimize the error by adjusting the system control inputs.</p>
+<h2 id="components-of-a-pid-controller"><a class="zola-anchor" href="#components-of-a-pid-controller" aria-label="Anchor link for: components-of-a-pid-controller">Components of a PID Controller</a></h2>
+<ol>
+<li>
+<p><strong>Proportional</strong>: The proportional term produces an output value that is proportional to the current error value. The proportional response can be adjusted by multiplying the error by a constant known as $K_p$, the proportional gain constant.</p>
+</li>
+<li>
+<p><strong>Integral</strong>: The integral term is concerned with the accumulation of past errors. If the error has been present for an extended period of time, it will accumulate (integral of the error), and the controller will respond by changing the control output in relation to a constant $K_i$ known as integral gain. You can also think of the integral term as correcting the smaller errors that can't be corrected by the proportional term; since it add ups the error over time, it can &quot;notice&quot; the error even when it is small and correct it.</p>
+</li>
+<li>
+<p><strong>Derivative</strong>: The derivative term is a prediction of future error, based on its rate of change. It provides a control output to counteract the rate of error change. The contribution of the derivative term to the overall control action is termed the derivative gain, $K_d$.</p>
+</li>
+</ol>
+<h2 id="pid-controller-formula"><a class="zola-anchor" href="#pid-controller-formula" aria-label="Anchor link for: pid-controller-formula">PID Controller Formula</a></h2>
+<p>The PID control equation involves these three separate parameters, and is generally expressed in the following form:</p>
+<p>$$
+u(t) = K_p e(t) + K_i \int_{0}^{t} e(\tau) d\tau + K_d \frac{de(t)}{dt}
+$$</p>
+<p>Where $u(t)$ is the control output and $e(t)$ is the error at time $t$.</p>
+<h2 id="how-pid-controllers-work"><a class="zola-anchor" href="#how-pid-controllers-work" aria-label="Anchor link for: how-pid-controllers-work">How PID Controllers Work</a></h2>
+<p><strong>Proportional Control</strong></p>
+<p>Let's start simple. Imagine you're steering a boat and the goal is to reach a specific point in a lake. The simplest way to correct course would be to turn the boat directly toward the target—this is essentially proportional control. However, there's a problem: what if the boat overshoots? With just proportional control, there's nothing to stop this; the boat will oscillate around the target point.</p>
+<p><strong>Adding Integral Control</strong></p>
+<p>To correct the overshooting, integral control enters the scene. If the boat overshoots, integral control starts accumulating the errors. The accumulated error will cause a larger control output, pushing the boat back more strongly towards the desired point, minimizing the overall error over time.</p>
+<p><strong>Derivative Control</strong></p>
+<p>Now, derivative control aims to provide a way to anticipate future errors. In our boat example, it's like seeing a large wave in the distance and adjusting the course proactively, rather than reacting when the boat is tossed.</p>
+<h2 id="tying-it-all-together"><a class="zola-anchor" href="#tying-it-all-together" aria-label="Anchor link for: tying-it-all-together">Tying It All Together</a></h2>
+<p>So, in a PID controller, all three terms work together to give a robust control system. The proportional part focuses on the current error, the integral part focuses on the sum of past errors, and the derivative part anticipates future errors. It's a bit like having a team of three experts, each specializing in one aspect of control, making sure your boat (or system) stays on course.</p>
+<p>Below is a simulation of PID controller I wrote in <a href="https://editor.p5js.org/orpuente98/sketches/v17FPESLD">P5.js</a>. The goal is to stabilize the box at the red line level. I encourage you to play with it to gain an intuition of what each component of the PID controller does.</p>
+<iframe class="canvas" title="pid" src="/pkg_pid/index.html" style="width:400px; height:600px;"></iframe>
+<h2 id="practical-applications-in-software"><a class="zola-anchor" href="#practical-applications-in-software" aria-label="Anchor link for: practical-applications-in-software">Practical Applications in Software</a></h2>
+<p>In software engineering, PID controllers can be used in various ways:</p>
+<ul>
+<li><strong>Queue Management</strong>: In distributed systems, PIDs can help regulate the number of tasks in a queue, ensuring efficient resource usage.</li>
+<li><strong>Autoscaling</strong>: Cloud-based services often use PID controllers to automatically scale resources up or down based on metrics like CPU usage or network traffic.</li>
+<li><strong>Game Development</strong>: In physics simulations or AI behavior, PID controllers can help make the motion look &quot;natural&quot;.</li>
+</ul>
+<h2 id="wrapping-up"><a class="zola-anchor" href="#wrapping-up" aria-label="Anchor link for: wrapping-up">Wrapping Up</a></h2>
+<p>The PID controller is an elegant piece of engineering wisdom that has stood the test of time. For someone like me who loves diving into the nuts and bolts of algorithms and control systems, understanding PID controllers is both intellectually satisfying and practically useful. I hope you found this overview as captivating as I find the subject itself!</p>
+<p>Feel free to reach out if you have any questions. Happy coding!</p>
+<p>Oscar</p>
 
   </div>
 </article>
