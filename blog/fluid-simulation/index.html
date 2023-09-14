@@ -66,7 +66,7 @@
     </span>
   </header>
   <div itemprop="articleBody" class="hyphenate">
-    <p>I recently finished <a href="https://doc.rust-lang.org/stable/book/">The Rust Book</a> and wanted to try something a little more complex. So I decided to translate into Rust a fluid simulation I had written in Java a couple of years ago while following <a href="https://youtu.be/alhpH6ECFvQ?si=A8itmEw1kGtRzVbM">Daniel Shiffman's challenge on fluid simulations</a>. This program simulates an uncompressible fluid with some dye in it, so we can see the dynamics of the fluids.</p>
+    <p>I recently finished <a href="https://doc.rust-lang.org/stable/book/">The Rust Book</a> and wanted to try something a little more complex. So I decided to translate into Rust a fluid simulation I had written in Java a couple of years ago while following <a href="https://youtu.be/alhpH6ECFvQ?si=A8itmEw1kGtRzVbM">Daniel Shiffman's challenge on fluid simulations</a>. This program simulates an incompressible fluid with some dye in it, so we can see the dynamics of the fluids.</p>
 <span id="continue-reading"></span>
 <p>Before digging into the code, here is the final result:</p>
 <ul>
@@ -164,7 +164,7 @@
 <ol>
 <li><em>Diffuse Velocity</em>: Updates the velocity field by taking into account the viscosity of the fluid.</li>
 <li><em>Advect Velocity</em>: Moves the velocity along itself, meaning it advects the velocity field.</li>
-<li><em>Project</em>: Makes sure the velocity field is mass-conserving, since we are simulating an uncompressible fluid.</li>
+<li><em>Project</em>: Makes sure the velocity field is mass-conserving, since we are simulating an incompressible fluid.</li>
 <li><em>Diffuse and Advect Dye</em>: Diffuses the dye based on its diffusion rate and then moves it along the velocity field.</li>
 </ol>
 <p>In the following sections, I'll go into more detail for these four steps.</p>
@@ -276,7 +276,7 @@
 </span><span>}
 </span></code></pre>
 <h2 id="helper-functions"><a class="zola-anchor" href="#helper-functions" aria-label="Anchor link for: helper-functions">Helper Functions</a></h2>
-<p>The <code>index</code> function to convert from two-dimensional indices to a one-dimnensional index.</p>
+<p>The <code>index</code> function to convert from two-dimensional indices to a one-dimensional index.</p>
 <pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#c82728;">inline</span><span>]
 </span><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">index</span><span>(</span><span style="color:#f07219;">size</span><span>: </span><span style="color:#8959a8;">usize</span><span>, </span><span style="color:#f07219;">x</span><span>: </span><span style="color:#8959a8;">usize</span><span>, </span><span style="color:#f07219;">y</span><span>: </span><span style="color:#8959a8;">usize</span><span>) -&gt; </span><span style="color:#8959a8;">usize </span><span>{
 </span><span>    </span><span style="color:#8959a8;">let</span><span> x </span><span style="color:#3e999f;">=</span><span> x.</span><span style="color:#4271ae;">clamp</span><span>(</span><span style="color:#f07219;">0</span><span>, size</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>);
