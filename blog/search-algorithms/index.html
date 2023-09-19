@@ -52,13 +52,13 @@
     
 <article class="blog-post">
   <header>
-    <h3 itemprop="name headline">Search algorithms
+    <h3 itemprop="name headline">A general template for common search algorithms
       <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
         <span itemprop="name">Oscar Puente</span>
       </span>
       <span class="reading-time">
         
-        (1 min. read)
+        (11 min. read)
       </span>
     </h3>
     <span class="shared">
@@ -66,9 +66,207 @@
     </span>
   </header>
   <div itemprop="articleBody" class="hyphenate">
-    <p>🚧 I am currently transcribing this entry from my archives. It will be available soon.</p>
+    <p>Last month, I've been deep-diving into the world of search algorithms in my Artificial Intelligence class at MIT. By the end of the chapter, we were presented with a table that elegantly captured how different search algorithms can fit into a general template. I couldn't resist sharing this illuminating insight with you all. In this blog post I will go over the search algorithms we studied in 6.034, and by the end I will show how they all fit into a generic search algorithm.</p>
 <span id="continue-reading"></span>
-<p>As we transition from the introductory phase, we encounter a similar placeholder in the content section. This paragraph, like a blank canvas awaiting strokes of inspiration, anticipates the forthcoming substance that will fill this space. Its purpose is to validate the formatting and arrangement of the content area, guaranteeing that the visual and structural aspects continue to seamlessly integrate. Just as a symphony begins with a few preliminary notes, this paragraph signifies the prelude to the substantive discussions and insights that are soon to unfold.</p>
+<h2 id="search-algorithms"><a class="zola-anchor" href="#search-algorithms" aria-label="Anchor link for: search-algorithms">Search Algorithms</a></h2>
+<p>Search algorithms can be organized into two categories: non-optimal or basic search and optimal search. Optimal search means that the algorithm is guaranteed to find the shortest path to the goal. Non-optimal or basic algorithms find a path to the goal, but not necessarily the shortest one.</p>
+<p>The most important data structure in each algorithm is Q, the collection of paths being considered, it is often called an agenda. Two operations on Q will primarily determine the search strategy:</p>
+<ul>
+<li>Which paths are extended?</li>
+<li>How should the newly extended paths be added to the agenda?</li>
+</ul>
+<p>Below is a summary of the search algorithms covered in <a href="https://ocw.mit.edu/courses/6-034-artificial-intelligence-fall-2010/">6.034</a>.</p>
+<p><strong>Depth-First Search (DFS)</strong>: This is a basic search procedures that extends one path at a time, backtracking if it doesn't find the goal node. DFS treats Q as stack, it adds newly extended paths to the front of Q and takes paths from the front of Q.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">dfs</span><span>(</span><span style="color:#f07219;">graph</span><span>, </span><span style="color:#f07219;">start_node</span><span>, </span><span style="color:#f07219;">goal_node</span><span>):
+</span><span>    Q </span><span style="color:#3e999f;">= </span><span>[[start_node]]
+</span><span>    </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>        path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal_node: </span><span style="color:#8959a8;">return </span><span>path
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path) </span><span style="color:#3e999f;">+ </span><span>Q
+</span></code></pre>
+<p><strong>Breadth-First Search (BFS)</strong>: A basic search procedure that extends paths in parallel. BFS treats Q as queue, it adds newly extended paths to the end of Q and takes paths from the front of Q.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">bfs</span><span>(</span><span style="color:#f07219;">graph</span><span>, </span><span style="color:#f07219;">start_node</span><span>, </span><span style="color:#f07219;">goal_node</span><span>):
+</span><span>    Q </span><span style="color:#3e999f;">= </span><span>[[start_node]]
+</span><span>    </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>        path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal_node: </span><span style="color:#8959a8;">return </span><span>path
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span>Q </span><span style="color:#3e999f;">+ </span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path)
+</span></code></pre>
+<p><strong>Hill Climbing</strong>: The basic DFS algorithm turns into Hill Climbing if we sort the newly extended paths using a <strong>heuristic</strong>. You can think of a <strong>heuristic</strong> as an approximation of how good the current path is. An example of a heuristic in a map is the euclidean distance from your current position to the goal.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">hill_climbing</span><span>():
+</span><span>    Q </span><span style="color:#3e999f;">= </span><span>[[start_node]]
+</span><span>    </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>        path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal_node: </span><span style="color:#8959a8;">return </span><span>path
+</span><span>        extended_paths </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">sorted_by_heuristic</span><span style="color:#4271ae;">(</span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path))
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span>extended_paths </span><span style="color:#3e999f;">+ </span><span>Q
+</span></code></pre>
+<p><strong>Beam Search</strong>: The basic BFS algorithm turns into Beam Search if we sort Q using a heuristic and keep only a fixed number w of paths in Q, pruning the rest.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">beam_search</span><span>():
+</span><span>    Q </span><span style="color:#3e999f;">= </span><span>[[start_node]]
+</span><span>    </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>        path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal_node: </span><span style="color:#8959a8;">return </span><span>path
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span>Q </span><span style="color:#3e999f;">+ </span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path)
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">sorted_by_heuristic</span><span style="color:#4271ae;">(Q)</span><span>[:w] </span><span style="color:#8959a8;">if </span><span>whole_level_extended </span><span style="color:#8959a8;">else </span><span>Q
+</span></code></pre>
+<p><strong>Best-First Search</strong>: You can think of best-first as Beam search with $w=1$.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">best_first_search</span><span>():
+</span><span>    Q </span><span style="color:#3e999f;">= </span><span>[[start_node]]
+</span><span>    </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>        path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal_node: </span><span style="color:#8959a8;">return </span><span>path
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span>Q </span><span style="color:#3e999f;">+ </span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path)
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">sorted_by_heuristic</span><span style="color:#4271ae;">(Q)</span><span>[:</span><span style="color:#f07219;">1</span><span>]
+</span></code></pre>
+<p><strong>Branch and Bound (B&amp;B)</strong>: In its simple form, branch and bound is similar to the basic BFS algorithm, but sorts the paths in the agenda according to their path-length. The shortest path in terms of path-length is then extended one level and added back to the agenda. Note that path length is not the number of edges, but rather the sum of the weights along the edges of the path.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">bb</span><span>():
+</span><span>    Q </span><span style="color:#3e999f;">= </span><span>[[start_node]]
+</span><span>    </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>        path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal_node: </span><span style="color:#8959a8;">return </span><span>path
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span>Q </span><span style="color:#3e999f;">+ </span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path)
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">sorted_by_path_length</span><span style="color:#4271ae;">(Q)
+</span></code></pre>
+<p><strong>B&amp;B with an extended set</strong>: This variation of B&amp;B uses an extended set to keep track of the node that have been visited. We will only extend paths to nodes that haven't been visited before.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">bb_extended_set</span><span>():
+</span><span>    Q </span><span style="color:#3e999f;">= </span><span>[[start_node]]
+</span><span>    extended_set </span><span style="color:#3e999f;">= </span><span style="color:#c99e00;">set</span><span style="color:#4271ae;">()
+</span><span>    </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>        path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal_node: </span><span style="color:#8959a8;">return </span><span>path
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">in </span><span>extended_set: </span><span style="color:#8959a8;">continue
+</span><span>        </span><span style="color:#4271ae;">extended_set.</span><span style="color:#c82728;">add</span><span style="color:#4271ae;">(path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span style="color:#4271ae;">])
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span>Q </span><span style="color:#3e999f;">+ </span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path)
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">sorted_by_path_length</span><span style="color:#4271ae;">(Q)
+</span></code></pre>
+<p><strong>B&amp;B with a heuristic</strong>: This variation of B&amp;B sorts Q according to the path-length plus the heuristic of path.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">bb_with_heuristic</span><span>():
+</span><span>    Q </span><span style="color:#3e999f;">= </span><span>[[start_node]]
+</span><span>    </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>        path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal_node: </span><span style="color:#8959a8;">return </span><span>path
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span>Q </span><span style="color:#3e999f;">+ </span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path)
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">sorted_by_path_length_plus_heuristic</span><span style="color:#4271ae;">(Q)
+</span></code></pre>
+<p><strong>A* (A-star)</strong>: Though A* has many variations, it is usually implemented as B&amp;B with an extended set and a heuristic.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">a_star</span><span>():
+</span><span>    Q </span><span style="color:#3e999f;">= </span><span>[[start_node]]
+</span><span>    extended_set </span><span style="color:#3e999f;">= </span><span style="color:#c99e00;">set</span><span style="color:#4271ae;">()
+</span><span>    </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>        path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal_node: </span><span style="color:#8959a8;">return </span><span>path
+</span><span>        </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">in </span><span>extended_set: </span><span style="color:#8959a8;">continue
+</span><span>        </span><span style="color:#4271ae;">extended_set.</span><span style="color:#c82728;">add</span><span style="color:#4271ae;">(path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span style="color:#4271ae;">])
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span>Q </span><span style="color:#3e999f;">+ </span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path)
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">sorted_by_path_length_plus_heuristic</span><span style="color:#4271ae;">(Q)
+</span></code></pre>
+<h2 id="a-generic-search-algorithm"><a class="zola-anchor" href="#a-generic-search-algorithm" aria-label="Anchor link for: a-generic-search-algorithm">A generic search algorithm</a></h2>
+<p>As you might have noticed, the implementations of these algorithms are very similar. We can generalize them as follows,</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">generic_search</span><span>(</span><span style="color:#f07219;">sort_extended_paths_fn</span><span>,
+</span><span>                   </span><span style="color:#f07219;">add_paths_to_front_of_agenda</span><span>,
+</span><span>                   </span><span style="color:#f07219;">sort_agenda_fn</span><span>,
+</span><span>                   </span><span style="color:#f07219;">use_extended_set</span><span>):
+</span><span>    
+</span><span>    </span><span style="color:#8959a8;">def </span><span style="color:#4271ae;">search</span><span>(</span><span style="color:#f07219;">graph</span><span>, </span><span style="color:#f07219;">start</span><span>, </span><span style="color:#f07219;">goal</span><span>):
+</span><span>        Q </span><span style="color:#3e999f;">= </span><span>[[start]]
+</span><span>        extended_set </span><span style="color:#3e999f;">= </span><span style="color:#c99e00;">set</span><span style="color:#4271ae;">()
+</span><span>        </span><span style="color:#8959a8;">while </span><span>Q:
+</span><span>            path </span><span style="color:#3e999f;">= </span><span style="color:#4271ae;">Q.</span><span style="color:#c82728;">pop</span><span style="color:#4271ae;">(</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">)
+</span><span>            </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">== </span><span>goal: </span><span style="color:#8959a8;">return </span><span>path            
+</span><span>            </span><span style="color:#8959a8;">if </span><span>use_extended_set:
+</span><span>                </span><span style="color:#8959a8;">if </span><span>path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span>] </span><span style="color:#3e999f;">in </span><span>extended_set: </span><span style="color:#8959a8;">continue
+</span><span>                </span><span style="color:#4271ae;">extended_set.</span><span style="color:#c82728;">add</span><span style="color:#4271ae;">(path[</span><span style="color:#3e999f;">-</span><span style="color:#f07219;">1</span><span style="color:#4271ae;">])            
+</span><span>            ext_paths </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">sort_extended_paths_fn</span><span style="color:#4271ae;">(</span><span style="color:#c82728;">extensions</span><span style="color:#4271ae;">(graph, path))
+</span><span>            Q </span><span style="color:#3e999f;">= </span><span>ext_paths </span><span style="color:#3e999f;">+ </span><span>Q </span><span style="color:#8959a8;">if </span><span>add_paths_to_front_of_agenda </span><span style="color:#8959a8;">else </span><span>Q </span><span style="color:#3e999f;">+ </span><span>ext_paths          
+</span><span>            Q </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">sort_agenda_fn</span><span style="color:#4271ae;">(Q)
+</span><span>
+</span><span>    </span><span style="color:#8959a8;">return </span><span>search
+</span></code></pre>
+<p>We can then parametrize this generic search function to obtain the different search algorithms as follows. Note that beam search needs a specialized sort function.</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">do_nothing</span><span>(</span><span style="color:#f07219;">graph</span><span>, </span><span style="color:#f07219;">goal</span><span>, </span><span style="color:#f07219;">paths</span><span>):
+</span><span>    </span><span style="color:#8959a8;">return </span><span>paths
+</span><span>
+</span><span style="color:#8959a8;">def </span><span style="color:#4271ae;">all_equal</span><span>(</span><span style="color:#f07219;">lst</span><span>):
+</span><span>    </span><span style="color:#8959a8;">if </span><span style="color:#3e999f;">not </span><span>lst: </span><span style="color:#8959a8;">return </span><span style="color:#f07219;">True
+</span><span>    </span><span style="color:#8959a8;">return </span><span style="color:#4271ae;">all(x </span><span style="color:#3e999f;">== </span><span style="color:#4271ae;">lst[</span><span style="color:#f07219;">0</span><span style="color:#4271ae;">] </span><span style="color:#8959a8;">for </span><span style="color:#4271ae;">x </span><span style="color:#8959a8;">in </span><span style="color:#4271ae;">lst)
+</span><span>
+</span><span style="color:#8959a8;">def </span><span style="color:#4271ae;">beam_sort</span><span>(</span><span style="color:#f07219;">graph</span><span>, </span><span style="color:#f07219;">goal</span><span>, </span><span style="color:#f07219;">paths</span><span>):
+</span><span>    is_whole_level_extended </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">all_equal</span><span style="color:#4271ae;">([len(path) </span><span style="color:#8959a8;">for </span><span style="color:#4271ae;">path </span><span style="color:#8959a8;">in </span><span style="color:#4271ae;">paths])
+</span><span>    </span><span style="color:#8959a8;">return </span><span style="color:#c82728;">sort_by_heuristic</span><span style="color:#4271ae;">(paths)</span><span>[:w] </span><span style="color:#8959a8;">if </span><span>is_whole_level_extended </span><span style="color:#8959a8;">else </span><span>paths
+</span><span>
+</span><span>dfs </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">generic_search</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">True</span><span style="color:#4271ae;">,
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False
+</span><span style="color:#4271ae;">)
+</span><span>
+</span><span>bfs </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">generic_search</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False</span><span style="color:#4271ae;">,
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False
+</span><span style="color:#4271ae;">)
+</span><span>
+</span><span>hill_climbing </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">generic_search</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    sort_by_heuristic,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False</span><span style="color:#4271ae;">,
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False
+</span><span style="color:#4271ae;">)
+</span><span>
+</span><span>beam_search </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">generic_search</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False</span><span style="color:#4271ae;">,
+</span><span style="color:#4271ae;">    beam_sort,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False
+</span><span style="color:#4271ae;">)
+</span><span>
+</span><span>best_first </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">generic_search</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False</span><span style="color:#4271ae;">,
+</span><span style="color:#4271ae;">    sort_by_heuristic,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False
+</span><span style="color:#4271ae;">)
+</span><span>
+</span><span>branch_and_bound </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">generic_search</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False</span><span style="color:#4271ae;">,
+</span><span style="color:#4271ae;">    sort_by_path_length,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False
+</span><span style="color:#4271ae;">)
+</span><span>
+</span><span>branch_and_bound_with_heuristic </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">generic_search</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False</span><span style="color:#4271ae;">,
+</span><span style="color:#4271ae;">    sort_by_path_length_plus_heuristic,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False
+</span><span style="color:#4271ae;">)
+</span><span>
+</span><span>branch_and_bound_with_extended_set </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">generic_search</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False</span><span style="color:#4271ae;">,
+</span><span style="color:#4271ae;">    sort_by_path_length,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">True
+</span><span style="color:#4271ae;">)
+</span><span>
+</span><span>a_star </span><span style="color:#3e999f;">= </span><span style="color:#c82728;">generic_search</span><span style="color:#4271ae;">(
+</span><span style="color:#4271ae;">    do_nothing,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">False</span><span style="color:#4271ae;">,
+</span><span style="color:#4271ae;">    sort_by_path_length_plus_heuristic,
+</span><span style="color:#4271ae;">    </span><span style="color:#f07219;">True
+</span><span style="color:#4271ae;">)
+</span></code></pre>
+<h2 id="interactive-program"><a class="zola-anchor" href="#interactive-program" aria-label="Anchor link for: interactive-program">Interactive Program</a></h2>
+<p>Below is an interactive sandbox that you can use to test the general template.</p>
+<blockquote>
+<p>I am currently translating this program from my archives to a web version. It will be available soon!</p>
+</blockquote>
+<h2 id="conclusion"><a class="zola-anchor" href="#conclusion" aria-label="Anchor link for: conclusion">Conclusion</a></h2>
+<p>Understanding the framework that underlies search algorithms has been incredibly eye-opening to me. I hope this post has clarified how a general template can help simplify these algorithms, making them easier to grasp and even modify for your specific needs. Now, you're not just learning individual algorithms; you're understanding the language that describes them all. I hope you learned something new.</p>
+<p>Happy coding!</p>
+<p>Oscar</p>
 
   </div>
 </article>
