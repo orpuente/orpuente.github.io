@@ -66,7 +66,7 @@
     </span>
   </header>
   <div itemprop="articleBody" class="hyphenate">
-    <p>Last month, I've been deep-diving into the world of search algorithms in my Artificial Intelligence class at MIT. By the end of the chapter, we were presented with a table that elegantly captured how different search algorithms can fit into a general template. I couldn't resist sharing this illuminating insight with you all. In this blog post I will go over the search algorithms we studied in 6.034, and by the end I will show how they all fit into a generic search algorithm.</p>
+    <p>Last month, I've been deep-diving into the world of search algorithms in my Artificial Intelligence class at MIT. By the end of the chapter, we were presented with a table that elegantly captured how different search algorithms can fit into a general template. I couldn't resist sharing this illuminating insight with you all. In this blog post I will go over the search algorithms we studied in 6.034, and by the end I will show you how they all fit into a generic search algorithm and provide and provide an interactive sandbox so you can play with the different algorithms.</p>
 <span id="continue-reading"></span>
 <h2 id="search-algorithms"><a class="zola-anchor" href="#search-algorithms" aria-label="Anchor link for: search-algorithms">Search Algorithms</a></h2>
 <p>Search algorithms can be organized into two categories: non-optimal or basic search and optimal search. Optimal search means that the algorithm is guaranteed to find the shortest path to the goal. Non-optimal or basic algorithms find a path to the goal, but not necessarily the shortest one.</p>
@@ -258,11 +258,15 @@
 </span><span style="color:#4271ae;">    </span><span style="color:#f07219;">True
 </span><span style="color:#4271ae;">)
 </span></code></pre>
-<h2 id="interactive-program"><a class="zola-anchor" href="#interactive-program" aria-label="Anchor link for: interactive-program">Interactive Program</a></h2>
-<p>Below is an interactive sandbox that you can use to test the general template.</p>
-<blockquote>
-<p>I am currently translating this program from my archives to a web version. It will be available soon!</p>
-</blockquote>
+<h2 id="interactive-sandbox"><a class="zola-anchor" href="#interactive-sandbox" aria-label="Anchor link for: interactive-sandbox">Interactive Sandbox</a></h2>
+<p>Below is an interactive sandbox that you can use to test the general template. As a remainder, this is the signature of the function <code>generic_search</code>,</p>
+<pre data-lang="python" style="background-color:#f9f9f9;color:#111111;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#8959a8;">def </span><span style="color:#4271ae;">generic_search</span><span>(</span><span style="color:#f07219;">sort_extended_paths_fn</span><span>,
+</span><span>                   </span><span style="color:#f07219;">add_paths_to_front_of_agenda</span><span>,
+</span><span>                   </span><span style="color:#f07219;">sort_agenda_fn</span><span>,
+</span><span>                   </span><span style="color:#f07219;">use_extended_set</span><span>)
+</span></code></pre>
+<p>Generic search sandbox:</p>
+<iframe class="canvas" title="search_algs" src="/pkg_search/index.html" style="width:400px; height:400px;"></iframe>
 <h2 id="conclusion"><a class="zola-anchor" href="#conclusion" aria-label="Anchor link for: conclusion">Conclusion</a></h2>
 <p>Understanding the framework that underlies search algorithms has been incredibly eye-opening to me. I hope this post has clarified how a general template can help simplify these algorithms, making them easier to grasp and even modify for your specific needs. Now, you're not just learning individual algorithms; you're understanding the language that describes them all. I hope you learned something new.</p>
 <p>Happy coding!</p>
