@@ -116,9 +116,9 @@
 <ul>
 <li><code>size</code>: Specifies the size of the grid. The simulation operates over a square grid of <code>size x size</code>.</li>
 <li><code>diffusion</code>: The rate at which the dye will spread over the grid.</li>
-<li><code>viscosity</code>: Measures how &quot;sticky&quot; or &quot;thick&quot; the fluid is. Higher values mean a slower, more viscous fluid.</li>
+<li><code>viscosity</code>: Measures how "sticky" or "thick" the fluid is. Higher values mean a slower, more viscous fluid.</li>
 <li><code>dye</code>, <code>vx</code>, <code>vy</code>: Store the current state of dye concentrations and velocity fields (x and y components).</li>
-<li><code>dye_next</code>, <code>vx_next</code>, <code>vy_next</code>: Store the &quot;next&quot; state of dye concentrations and velocity fields (x and y components).</li>
+<li><code>dye_next</code>, <code>vx_next</code>, <code>vy_next</code>: Store the "next" state of dye concentrations and velocity fields (x and y components).</li>
 </ul>
 <h2 id="initializing-the-fluidgrid"><a class="zola-anchor" href="#initializing-the-fluidgrid" aria-label="Anchor link for: initializing-the-fluidgrid">Initializing the <code>FluidGrid</code></a></h2>
 <p>The <code>new</code> function is pretty straightforward. It initializes the <code>FluidGrid</code> with zeros and the size, diffusion rate, and viscosity you specify.</p>
@@ -228,7 +228,7 @@
 </span><span>}
 </span></code></pre>
 <h2 id="advecting-velocity-and-dye"><a class="zola-anchor" href="#advecting-velocity-and-dye" aria-label="Anchor link for: advecting-velocity-and-dye">Advecting Velocity and Dye</a></h2>
-<p>Finally, we have advection. Think of it like this: the fluid at some cell moves—or &quot;is advected&quot;—by the velocity at that cell. Both velocity and dye are advected to simulate this movement.</p>
+<p>Finally, we have advection. Think of it like this: the fluid at some cell moves—or "is advected"—by the velocity at that cell. Both velocity and dye are advected to simulate this movement.</p>
 <pre data-lang="rust" style="background-color:#f9f9f9;color:#111111;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8959a8;">fn </span><span style="color:#4271ae;">advect_velocity</span><span>(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#f07219;">self</span><span>, </span><span style="color:#f07219;">dt</span><span>: </span><span style="color:#8959a8;">f32</span><span>) {
 </span><span>    </span><span style="color:#8959a8;">Self</span><span>::advect(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vx_next, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vx, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vx, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vy, dt, </span><span style="color:#c82728;">self</span><span>.size);
 </span><span>    </span><span style="color:#8959a8;">Self</span><span>::advect(</span><span style="color:#3e999f;">&amp;</span><span style="color:#8959a8;">mut </span><span style="color:#c82728;">self</span><span>.vy_next, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vy, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vx, </span><span style="color:#3e999f;">&amp;</span><span style="color:#c82728;">self</span><span>.vy, dt, </span><span style="color:#c82728;">self</span><span>.size);

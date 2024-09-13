@@ -66,7 +66,7 @@
     </span>
   </header>
   <div itemprop="articleBody" class="hyphenate">
-    <p>I've been learning <a href="https://processing.org/">Processing</a> during the last few months. During my learning process, I have been writing a bouncing box simulation as a code kata. If you don't know what code katas are, check out <a href="http://codekata.com/">this blog post</a> by Dave Thomas. After writing the program many times I have been able to condense the program's logic down to four statements/lines of code.</p>
+    <p>I've been learning <a href="https://processing.org/">Processing</a> last few months. During my learning process I have been writing a bouncing box simulation as a code kata. If you don't know what code katas are check out <a href="http://codekata.com/">this blog post</a> by Dave Thomas. After writing the program many times I have been able to condense the program's logic down to four statements/lines of code.</p>
 <span id="continue-reading"></span>
 <pre data-lang="java" style="background-color:#f9f9f9;color:#111111;" class="language-java "><code class="language-java" data-lang="java"><span style="color:#8e908c;">// initialize the program state
 </span><span style="color:#c99e00;">PVector</span><span> s </span><span style="color:#3e999f;">= </span><span style="color:#8959a8;">new </span><span style="color:#c99e00;">PVector</span><span>(width</span><span style="color:#3e999f;">/</span><span style="color:#f07219;">2</span><span>, height</span><span style="color:#3e999f;">/</span><span style="color:#f07219;">2</span><span>),
@@ -74,7 +74,7 @@
 </span><span>    d </span><span style="color:#3e999f;">= </span><span style="color:#8959a8;">new </span><span style="color:#c99e00;">PVector</span><span>(</span><span style="color:#f07219;">20</span><span>, </span><span style="color:#f07219;">15</span><span>);
 </span><span>
 </span><span>void </span><span style="color:#c82728;">draw</span><span style="color:#4271ae;">() </span><span>{
-</span><span>  </span><span style="color:#8e908c;">// draw call
+</span><span>  </span><span style="color:#8e908c;">// draw the box
 </span><span>  </span><span style="color:#c82728;">rect</span><span style="color:#4271ae;">(s.x, s.y, d.x, d.y)</span><span>;
 </span><span>
 </span><span>  </span><span style="color:#8e908c;">// update the box position
@@ -86,7 +86,7 @@
 </span><span>}
 </span></code></pre>
 <p>However, last night I was able to get the program's logic down to a single statement! I came across this neat optimization while studying <a href="https://en.wikipedia.org/wiki/Dynamical_billiards">billiards</a> in my <a href="https://ocw.mit.edu/courses/18-900-geometry-and-topology-in-the-plane-spring-2023/">Intro to Topology</a> class. Before delving in how it works, let's see the code.</p>
-<span id="continue-reading"></span>
+<!-- more -->
 <pre data-lang="java" style="background-color:#f9f9f9;color:#111111;" class="language-java "><code class="language-java" data-lang="java"><span style="color:#8e908c;">// initialize the program&#39;s state
 </span><span style="color:#8959a8;">float</span><span> x</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">100</span><span>, y</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">100</span><span>, w</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">50</span><span>, h</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">40</span><span>, vx</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">0.5</span><span>, vy</span><span style="color:#3e999f;">=</span><span style="color:#f07219;">0.3</span><span>;
 </span><span>
@@ -119,7 +119,7 @@
 <pre data-lang="java" style="background-color:#f9f9f9;color:#111111;" class="language-java "><code class="language-java" data-lang="java"><span style="color:#8959a8;">float</span><span> x_folded </span><span style="color:#3e999f;">= </span><span>(x </span><span style="color:#3e999f;">+=</span><span> vx) </span><span style="color:#3e999f;">% </span><span>(</span><span style="color:#f07219;">2 </span><span style="color:#3e999f;">*</span><span> square_side) </span><span style="color:#3e999f;">-</span><span> square_side;
 </span><span style="color:#8959a8;">float</span><span> y_folded </span><span style="color:#3e999f;">= </span><span>(y </span><span style="color:#3e999f;">+=</span><span> vy) </span><span style="color:#3e999f;">% </span><span>(</span><span style="color:#f07219;">2 </span><span style="color:#3e999f;">*</span><span> square_side) </span><span style="color:#3e999f;">-</span><span> square_side;
 </span></code></pre>
-<p>This should look familiar to the code I showed earlier in this post. The only difference is that when considering a bouncing box instead of a ball, we have to account for the box dimensions when computing the folded position.</p>
+<p>This is similar to the code I showed earlier in this post. The only difference is that when considering a bouncing box instead of a ball, we have to account for the box dimensions when computing the folded position.</p>
 <p><strong>Edit</strong>: If you are interested in learning more about this topic, I recently wrote <a href="/todo/">a paper on billiards</a>.</p>
 
   </div>
