@@ -33,14 +33,16 @@ class Particle {
   }
   
   update() {
-    let next_x = this.x + this.vx;    
+    let dt = deltaTime * 0.08;
+
+    let next_x = this.x + this.vx * dt;
     if (0 <= next_x && next_x < window.innerWidth) {
       this.x = next_x;
     } else {
       this.vx = - this.vx;
     }
     
-    let next_y = this.y + this.vy;
+    let next_y = this.y + this.vy * dt;
     if (0 <= next_y && next_y < window.innerHeight) {
       this.y = next_y;
     } else {
@@ -57,18 +59,20 @@ class Particle {
 function drawEdge(p1, p2) {
   if (p1 !== p2) {
     let edgeLength = dist(p1.x, p1.y, p2.x, p2.y);
+    if (edgeLength > 200) {
+      return;
+    }
     let edgeCenterX = (p1.x + p2.x) / 2;
     let edgeCenterY = (p1.y + p2.y) / 2;
     let edgeRelevance = dist(edgeCenterX, edgeCenterY, window.innerWidth / 2, window.innerHeight / 2);
-    if (edgeLength > 200) {
-      edgeRelevance = 0;
+    edgeRelevance = map(edgeRelevance, 0, window.innerWidth / 2, 0, 1);  
+    let preAlpha = map(edgeLength, 0, 100, 0, 1, true);
+    let alpha = 255 * (1 - sqrt(preAlpha)) * sigmoid(edgeRelevance);    
+    if (alpha <= 1) {
+      return;
     }
-    edgeRelevance = map(edgeRelevance, 0, window.innerWidth / 2, 0, 1);
-
-    let a = map(edgeLength, 0, 100, 0, 1, true);
     let c = lerpColor(p1.color, p2.color, 0.5);
-    
-    c.setAlpha(255 * (1 - sqrt(a)) * sigmoid(edgeRelevance));
+    c.setAlpha(alpha);
     stroke(c);
     line(p1.x, p1.y, p2.x, p2.y);
   }
